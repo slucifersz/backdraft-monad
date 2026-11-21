@@ -77,8 +77,7 @@ export default function Front({ active }: { active: boolean }) {
         </div>
         <div className="bd-split-notes">
           <span className="bd-note">
-            估算算法：116 万笔/天 × 每笔约 17 万未用 gas ≈ 2000 亿；÷ 每步训练约 1 万 gas ≈ 2000
-            万步（按 Category Labs 公开数据和我们的实测推算）
+            估算算法：116 万笔/天 × 每笔约 17 万未用 gas ≈ 2000 亿（按 Category Labs 公开数据推算）
           </span>
           <span className="bd-note">
             <span className="bd-tag solid">实测</span>{" "}

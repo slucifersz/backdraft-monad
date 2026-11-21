@@ -124,12 +124,12 @@ export function Sheet3() {
   return (
     <section className="bd-screen" id="s3" aria-label="原理">
       <Mast name="原理">
-        <span>量 · 烧 · 结 · 应用不用改一行代码</span>
+        <span>量 · 记 · 读 · 应用不用改一行代码</span>
       </Mast>
 
       <h2 className="bds-h">原理只有一句话。</h2>
 
-      <p className="bdx-banner">一笔交易在结束之前，合约看得见自己还剩多少 gas，而且可以接着算别的。</p>
+      <p className="bdx-banner">一笔交易在结束之前，合约看得见自己还剩多少 gas。所以真实用量，在链上量得出来。</p>
 
       <div className="bdx-lsj">
         <div className="bdx-step purple">
@@ -140,13 +140,13 @@ export function Sheet3() {
           </p>
         </div>
         <div className="bdx-step fire">
-          <div className="bdx-char">烧</div>
-          <p>把剩下的 gas 交给队列里的任务。任务一边算一边看剩余，不够下一步就自己停。拿多少，算多少。</p>
+          <div className="bdx-char">记</div>
+          <p>用这笔交易里本来要作废的剩余 gas，把这个数按“合约 + 函数”记到链上。只写自己的一格存储，不碰任何人的状态。</p>
         </div>
         <div className="bdx-step">
-          <div className="bdx-char">结</div>
+          <div className="bdx-char">读</div>
           <p>
-            按任务实际用掉的 gas 付赏金。钱来自挂任务的人的押金，付给发交易的人。单价不超过 gas 价格的九成。
+            之后任何钱包、Agent、合约读一次链，就拿到建议的上限：实测最大用量加 7.5% 余量。下一笔照着设，不再多付。
           </p>
         </div>
       </div>
@@ -200,8 +200,8 @@ export function Sheet3() {
           记这个数用的 gas 已经付过了，不记也是这个价。
         </p>
         <p className="bds-body">
-          <b>不鼓励多留。</b>
-          赏金最多是 gas 价格的九成，多留一定是亏的。
+          <b>只做一件小事。</b>
+          记一次只要一两万 gas。它不跑别人的任务，不破坏交易的整体性。
         </p>
       </div>
     </section>
@@ -212,7 +212,7 @@ export function Sheet3() {
 
 const isHeartbeat = (label: string) => /heart|beat|心跳/i.test(label);
 const PLACEHOLDER_JOBS = [
-  { name: "训练链上模型", heavy: true },
+  { name: "拟合回归线", heavy: true },
   { name: "心跳", heavy: false },
 ];
 
@@ -374,21 +374,29 @@ const HOOD: { title: string; text: string; figure: string }[] = [
     text: "合约在调用前后各读一次剩余 gas，把真实分段写进链上记录。",
     figure: "2 次读数",
   },
-  { title: "拿多少，算多少", text: "任务每算一步就看一眼剩余，不够下一步就停。", figure: "每步约 10,000 gas" },
   {
-    title: "恶意任务拖不垮你",
-    text: "独立调用、gas 上限、失败捕获、只取回 32 字节、重入锁。",
-    figure: "3 种攻击，0 次得手",
+    title: "记到链上，读一次就拿到",
+    text: "按“合约 + 函数”存一格：最近值、最大值、均值、次数。任何人一次只读调用拿到建议上限。",
+    figure: "62,427 → 建议 88,313",
   },
-  { title: "赏金上限写在合约里", text: "每单位 gas 的赏金不超过 gas 价格的九成。", figure: "≤ 90%" },
+  {
+    title: "不破坏交易的整体性",
+    text: "记录只写自己的存储，不调用任何外部合约。队列只收自有任务，独立调用、gas 上限、失败捕获、重入锁。",
+    figure: "13 项测试",
+  },
+  {
+    title: "照着设，省八成",
+    text: "同一笔调用，按链上建议的上限直接发，对比写死 500,000。两笔都是测试网上的真实交易。",
+    figure: "手续费 −82%",
+  },
   {
     title: "按 Monad 的定价优化",
-    text: "Monad 读一个冷存储槽 8,100 gas，以太坊 2,100。16 个训练样本压进 2 个存储槽。",
+    text: "Monad 读一个冷存储槽 8,100 gas，以太坊 2,100。16 个数据点压进 2 个存储槽。",
     figure: "固定开销 90,000 → 40,000",
   },
   {
-    title: "全程在链上的梯度下降",
-    text: "定点数运算，算预测、求梯度、更新参数都在合约里。",
+    title: "用量随输入变化时：回归线",
+    text: "两个参数的直线拟合，定点数运算，每一步由剩余 gas 支付。",
     figure: "191 步，误差 0.14%",
   },
 ];
@@ -479,7 +487,7 @@ export function Sheet8() {
           <span>上限的设法</span>
           <span>gas 上限</span>
           <span>被点燃的 gas</span>
-          <span>训练步数</span>
+          <span>拟合步数</span>
           <span>手续费 (MON)</span>
           <span>赚回 (MON)</span>
           <span>赚回比例</span>
@@ -551,7 +559,8 @@ function useAnimatedNumber(target: number) {
 }
 
 // 2026-11-21 14:27 的链上快照，只在读不到实时值时显示。
-const SNAPSHOT = { gasRecycled: 3_605_878, burns: 20, units: 273, bountyMon: "0.1803" };
+// 读不到链上数据时显示的快照（当前合约，2026-11-21 18:30）。
+const SNAPSHOT = { gasRecycled: 283706, burns: 1, units: 25, bountyMon: "0.0142" };
 
 const CONTRACTS: { name: string; note?: string; address: string }[] = [
   { name: "Afterburner", note: "（Backdraft 的核心合约）", address: ADDR.afterburner },
@@ -648,8 +657,7 @@ export function Sheet9({ totals }: { totals: Totals | null }) {
             </li>
           </ul>
           <p className="bds-small">
-            今天的边界：任务何时被执行不确定，适合不赶时间的计算；今天通过包装合约发起调用，依赖调用者身份的应用还不能直接用；剩余少于约
-            9 万 gas 的交易点不着；合约未经审计，只在测试网运行。
+            今天的边界：只有经过它的交易才会被计量；只记最大值，输入变化大的函数还不够准，使用前要先估算一次；通过包装入口测量时调用者会变，依赖调用者身份的调用量不了；合约未经审计，只在测试网运行。
           </p>
         </div>
       </div>

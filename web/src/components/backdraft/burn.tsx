@@ -289,7 +289,7 @@ export function Legend({ result }: { result: BurnResult | null }) {
       <div className={`job${dim}`}>
         <span>
           被点燃
-          {result && result.units > 0 ? ` · ${trainSteps(result.units)} 步训练 + 1 次心跳` : ""}
+          {result && result.units > 0 ? ` · ${trainSteps(result.units)} 步拟合 + 1 次心跳` : ""}
         </span>
         <b>{result ? fmtGas(result.jobGas) : "—"}</b>
       </div>

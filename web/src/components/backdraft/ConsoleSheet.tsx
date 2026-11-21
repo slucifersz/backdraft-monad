@@ -129,7 +129,7 @@ export default function ConsoleSheet({
           );
         } else log("err", "读不到队列：RPC 没有响应");
         if (m.status === "fulfilled")
-          log("out", `模型已训练 ${m.value.steps} 步 · 当前误差 ${m.value.loss.toFixed(6)}`);
+          log("out", `回归线已拟合 ${m.value.steps} 步 · 当前误差 ${m.value.loss.toFixed(6)}`);
       }
     },
     [log],
@@ -194,7 +194,7 @@ export default function ConsoleSheet({
           log(
             "out",
             `${s.mainOk ? "调用" : "调用会失败，"}用 ${fmtGas(s.mainGas)} · 可点燃 ${fmtGas(s.jobGas)}` +
-              (s.units > 0 ? ` · ${trainSteps(s.units)} 步训练 + 1 次心跳` : "") +
+              (s.units > 0 ? ` · ${trainSteps(s.units)} 步拟合 + 1 次心跳` : "") +
               ` · 赏金 ${mon(s.bountyMon)} MON · 手续费 ${mon(s.feeMon)} MON`,
           );
           log(s.jobGas > 0 ? "ok" : "out", s.jobGas > 0 ? "值得回燃。" : "上限设得够紧，没有可烧的。");
@@ -470,7 +470,7 @@ export default function ConsoleSheet({
               <dd>{sim ? fmtGas(sim.jobGas) : "…"}</dd>
             </div>
             <div>
-              <dt>能训练</dt>
+              <dt>能拟合</dt>
               <dd>{sim ? `${trainSteps(sim.units)} 步` : "…"}</dd>
             </div>
             <div className="hot">

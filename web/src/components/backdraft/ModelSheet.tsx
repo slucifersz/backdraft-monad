@@ -149,7 +149,7 @@ export default function ModelSheet({
               +{flash.steps} 步 · 来自交易 {shortHash(flash.hash)}
             </div>
           )}
-          <p className="bd-model-explain">一步训练，就是看模型现在错了多少，把它的参数往对的方向挪一点。</p>
+          <p className="bd-model-explain">一步拟合，就是看这条线现在偏了多少，把它的两个参数往对的方向挪一点。</p>
           <div className="bd-model-key">
             <span>
               <i className="dot" /> 16 个实测值
@@ -173,7 +173,7 @@ export default function ModelSheet({
             )}
           </div>
           <div className="bd-model-loss">
-            <svg viewBox={`0 0 ${LW} ${LH}`} role="img" aria-label="误差随训练步数下降，纵轴为对数刻度">
+            <svg viewBox={`0 0 ${LW} ${LH}`} role="img" aria-label="误差随拟合步数下降，纵轴为对数刻度">
               {[0, -2, -4, -6].map((e) => (
                 <g key={e}>
                   <line
@@ -204,7 +204,7 @@ export default function ModelSheet({
               ))}
               <path d={lossPath} fill="none" stroke="#0a0a0a" strokeWidth="3" strokeLinejoin="round" />
               <text x={LW - LP.r} y={LH - 4} textAnchor="end" fontSize="12" fontWeight="600">
-                误差（对数） · 训练步数 →
+                误差（对数） · 拟合步数 →
               </text>
             </svg>
             {events.length > 0 && <div className="bd-note">橙色的每一段，是这一场里的一把火烧出来的。</div>}
@@ -217,10 +217,10 @@ export default function ModelSheet({
           <b>
             全程在链上 <span className="bd-tag solid">实测</span>
           </b>
-          <p>算预测、求梯度、更新参数，都在合约里完成。任何人可以逐步验证。</p>
+          <p>每一步拟合都在合约里完成，由交易里剩余的 gas 支付。任何人可以逐步验证。</p>
         </div>
         <div>
-          <b>训练好就是公共品</b>
+          <b>任何人都能读</b>
           <p>任何合约都可以直接调用它的 predict(n)。</p>
         </div>
         <div>
@@ -234,8 +234,7 @@ export default function ModelSheet({
       </p>
 
       <p className="bd-note">
-        <span className="bd-tag solid">估算</span> 全网每天 2000 亿空转的 gas，够它训练约 2000 万步（2000 亿 ÷ 每步约 1
-        万 gas）。这是一个只有两个参数的线性模型，是一天之内能在链上完整训练并验证的规模。机制本身不限制模型大小：更大的模型只是把训练拆成更多步挂进队列。
+        <span className="bd-tag solid">实测</span> 这只是一条两个参数的直线，不是 AI。它补的是流量计的一个短板：只记最大值，对输入变化大的函数不够准。每一步约 1 万 gas。
       </p>
     </section>
   );

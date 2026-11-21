@@ -38,10 +38,10 @@ function segFor(active: string, main: Burn, fail: Burn): Seg {
         ? fromResult(main.result, main.lit, ["你的调用", "被点燃", "仍未用到", "固定开销"])
         : fromResult(REPLAY.h500, 0, ["你的调用", "", "已经付了钱，还没点火", "固定开销"]);
     case "s5":
-      return full(["", "这一段在训练链上模型", "", ""]);
+      return full(["", "这一段在拟合回归线", "", ""]);
     case "s6": {
       const r = fail.result ?? REPLAY.failed;
-      return fromResult(r, fail.result ? fail.lit : r.units, ["✕", "失败的交易也在训练模型", "", ""]);
+      return fromResult(r, fail.result ? fail.lit : r.units, ["✕", "失败的交易，剩余也被用起来", "", ""]);
     }
     case "s7":
       return full(["", "你的任务可以接在这一段", "", ""]);

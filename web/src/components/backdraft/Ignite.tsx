@@ -252,7 +252,7 @@ export default function Ignite({
       <div className="bd-stage" aria-live="polite">
         {phase === "idle" && (
           <>
-            <h2 className="bd-headline xl">把一笔交易烧到底。</h2>
+            <h2 className="bd-headline xl">发一笔，量一次。</h2>
             <p className="bd-predict">
               {burn.notice ? (
                 <span className="bd-notice">{burn.notice}</span>
@@ -263,7 +263,7 @@ export default function Ignite({
               ) : pred.jobGas > 0 ? (
                 <>
                   预测：这笔调用自己只用 <b>{fmtGas(pred.mainGas)}</b>；剩余可点燃{" "}
-                  <b>{fmtGas(pred.jobGas)}</b>；能训练 <b>{trainSteps(pred.units)}</b> 步；赚回{" "}
+                  <b>{fmtGas(pred.jobGas)}</b>；能拟合 <b>{trainSteps(pred.units)}</b> 步；赚回{" "}
                   <b>{mon(pred.bountyMon)} MON</b>。
                 </>
               ) : (
@@ -299,9 +299,9 @@ export default function Ignite({
               </span>
               {phase === "done" ? (
                 <p className="bd-claim">
-                  同样的手续费，多训练了 {trainSteps(result.units)} 步链上模型。
+                  流量计量到这笔调用的真实用量，并用剩余的 gas 记上了链。
                   <br />
-                  发交易的人还赚回了 {earned.toFixed(1)}%。
+                  发交易的人没多花钱，还拿回了 {earned.toFixed(1)}%。
                 </p>
               ) : (
                 <p className="bd-claim ink">
@@ -411,7 +411,7 @@ export function FailSheet({ burn, mode }: { burn: Burn; mode: Mode }) {
               <span className="bd-tail">
                 / {result.units} 个工作单位
                 <br />
-                {trainSteps(result.units)} 步训练 + 1 次心跳
+                {trainSteps(result.units)} 步拟合 + 1 次心跳
               </span>
             </>
           ) : result ? (
@@ -423,7 +423,7 @@ export function FailSheet({ burn, mode }: { burn: Burn; mode: Mode }) {
               <span className="bd-tail">
                 的手续费 <span className="bd-tag solid">实测</span>
                 <br />
-                连失败的交易，都在训练模型。
+                失败的交易，剩余的 gas 一样被用起来。
               </span>
             </>
           ) : null}
