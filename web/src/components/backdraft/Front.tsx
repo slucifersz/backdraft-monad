@@ -55,7 +55,11 @@ export default function Front({ active }: { active: boolean }) {
           </div>
         </div>
         <div className="bd-front-side">
-          <h1 className="bd-headline">付了钱，没人用。</h1>
+          <h1 className="bd-headline">
+            申请了多少，看得见。
+            <br />
+            用了多少，查不到。
+          </h1>
           <p className="bd-sub">
             回执只写你申请了多少，不写你用了多少。
             <br />
@@ -101,7 +105,7 @@ export default function Front({ active }: { active: boolean }) {
           <p>交易经过时量出真实用量，用本来要作废的 gas 记到链上。不用任何人出钱维护。下一笔照着设，就不再多付。</p>
         </div>
         <a className="bd-btn" href="#s4">
-          点火 ↓
+          量一笔 ↓
         </a>
       </div>
     </section>

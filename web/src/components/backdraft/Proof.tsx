@@ -21,8 +21,15 @@ const COPY: Record<string, string> = {
   估算: "这是推算出来的数字，不是直接测量。算法：116 万笔/天 × 每笔约 17 万未用 gas ≈ 2000 亿 gas/天（按 Category Labs 公开数据推算）。",
   规划: "这一项还没有做，是接下来要做的。",
   已完成: "这一项已经做完，代码在仓库里。",
+  草案已写: "草案已经写好放在仓库里，还没有提交给官方。",
 };
-const DEFAULT_LINK: Record<string, ProofLink> = { 实测: CONTRACT, 估算: CATEGORY, 规划: REPO, 已完成: REPO };
+const DEFAULT_LINK: Record<string, ProofLink> = {
+  实测: CONTRACT,
+  估算: CATEGORY,
+  规划: REPO,
+  已完成: REPO,
+  草案已写: REPO,
+};
 
 function build(tag: HTMLElement): Pop {
   const kind = (tag.textContent ?? "").trim();

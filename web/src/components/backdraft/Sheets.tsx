@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ADDR, EXPLORER, fmtGas, fmtMon, type Job, type Totals } from "@/lib/chain";
-import { REPLAY, shortHash } from "./replay";
+import { ADDR, EXPLORER } from "@/lib/chain";
 
 const DOCS_URL = "https://docs.monad.xyz/developer-essentials/gas-pricing";
 const CATEGORY_URL = "https://www.category.xyz/blogs/setting-your-gas-limit-on-monad";
@@ -21,12 +19,15 @@ function Mast({ name, children }: { name: string; children: React.ReactNode }) {
 
 const Tag = ({ children }: { children: React.ReactNode }) => <span className="bd-tag solid">{children}</span>;
 
-/* ------------------------------------------------------------ 第 2 版 */
+/* ------------------------------------------------------------ 第 2 版 · 缺一个数 */
+
+// 主网上的一笔真实交易（2026-11-21 下午抽查）。
+const REAL_TX = { asked: 15_532_547, needed: 2_642_402 };
 
 export function Sheet2() {
   return (
-    <section className="bd-screen" id="s2" aria-label="只有 Monad 有">
-      <Mast name="只有 Monad 有">
+    <section className="bd-screen" id="s2" aria-label="缺一个数">
+      <Mast name="缺一个数">
         <span>
           来源{" "}
           <a href={DOCS_URL} target="_blank" rel="noreferrer">
@@ -64,7 +65,7 @@ export function Sheet2() {
         </div>
         <div className="bds-vs-text">
           <p className="bds-body">
-            Monad 的区块在执行之前就已经排好，协议按每笔交易声明的上限预留算力。预留了、付了钱、却没用到的部分，就是这份资源。这是
+            Monad 的区块在执行之前就已经排好，协议按每笔交易声明的上限预留算力。预留了、付了钱、却没用到的部分，谁也看不见：回执上只有上限。这是
             Monad 的设计带来的，别的链上不存在。
           </p>
         </div>
@@ -72,7 +73,38 @@ export function Sheet2() {
 
       <p className="bds-quote">Monad 的回执里缺一个数字：这笔交易到底用了多少 gas。我们让它上了链。</p>
 
-      <div className="bds-exp">
+      <div className="bds-exp two">
+        <div className="bdm-ex">
+          <div className="bds-tagrow">
+            <Tag>实测</Tag>
+            <span className="bds-kicker">主网上的一笔真实交易</span>
+          </div>
+          <div className="bdm-ex-nums">
+            <div>
+              <span>申请了</span>
+              <b>
+                {REAL_TX.asked.toLocaleString("en-US")}
+                <small>gas</small>
+              </b>
+            </div>
+            <div className="need">
+              <span>重算只需要</span>
+              <b>
+                {REAL_TX.needed.toLocaleString("en-US")}
+                <small>gas</small>
+              </b>
+            </div>
+          </div>
+          <div className="bdm-ex-bar" role="img" aria-label="申请的 gas 里，只有 17% 是需要的">
+            <i style={{ width: `${(REAL_TX.needed / REAL_TX.asked) * 100}%` }} />
+            <i className="bd-hatch" />
+          </div>
+          <p className="bds-small">
+            2026-11-21 下午抽查主网连续 158 笔交易，其中 38 笔的上限是 500,000、1,600,000 这样的整数。
+          </p>
+          <p className="bdm-ex-point">发这笔交易的人看不到这个差距。回执上，这两个数是一样的。</p>
+        </div>
+
         <div className="bds-exp-main">
           <div className="bds-tagrow">
             <Tag>实测</Tag>
@@ -102,23 +134,14 @@ export function Sheet2() {
               <b>89%</b>
             </div>
           </div>
-          <p className="bds-small">回执和区块浏览器上的 gasUsed 显示的就是上限，所以这份资源一直没人看见。</p>
+          <p className="bds-small">回执和区块浏览器上的 gasUsed 显示的就是上限，所以这个差距一直没人看见。</p>
         </div>
-        <aside className="bds-box" aria-label="来路">
-          <span className="bds-kicker">来路</span>
-          <p className="bds-small">
-            我们今天原本想做一个省 gas 的工具。查资料时发现，Monad
-            的研究团队已经把这个问题研究透了，连解法都给了。于是我们反过来想：省不掉的这部分，能不能用起来。
-          </p>
-        </aside>
       </div>
     </section>
   );
 }
 
-/* ------------------------------------------------------------ 第 3 版 */
-
-const SKETCH_CELLS = Array.from({ length: 20 }, (_, i) => i);
+/* ------------------------------------------------------------ 第 3 版 · 原理 */
 
 export function Sheet3() {
   return (
@@ -153,28 +176,24 @@ export function Sheet3() {
 
       <div className="bdx-map">
         <div>
-          <div className="bds-bar" role="img" aria-label="示意：紫色段是量出来的你的调用，橙色段是被烧掉的剩余 gas">
-            <div className="bds-bar-call" style={{ flex: "12 1 0" }} />
-            <div className="bds-bar-job" style={{ flex: "64 1 0" }}>
-              {SKETCH_CELLS.map((i) => (
-                <i key={i} className="lit" />
-              ))}
-            </div>
-            <div className="bd-hatch" style={{ flex: "11 1 0" }} />
-            <div className="bds-bar-over" style={{ flex: "13 1 0" }} />
+          <div
+            className="bds-bar"
+            role="img"
+            aria-label="示意：紫色段是量出来的真实用量，橙色段是把它记到链上的开销，斜线段是没用上的"
+          >
+            <div className="bds-bar-call" style={{ flex: "13 1 0" }} />
+            <div className="bds-bar-rec" style={{ flex: "13 1 0" }} />
+            <div className="bd-hatch" style={{ flex: "74 1 0" }} />
           </div>
           <div className="bdx-links">
-            <span className="purple" style={{ flex: "12 1 0" }}>
-              <b>量</b> 调用
+            <span className="purple" style={{ flex: "13 1 0" }}>
+              <b>量</b> 用量
             </span>
-            <span className="fire" style={{ flex: "64 1 0" }}>
-              <b>烧</b> 剩下的 gas，一格一格执行队列里的任务
+            <span className="fire" style={{ flex: "13 1 0" }}>
+              <b>记</b> 上链
             </span>
-            <span className="plain" style={{ flex: "11 1 0" }}>
-              仍未用到
-            </span>
-            <span className="plain" style={{ flex: "13 1 0" }}>
-              固定开销
+            <span className="plain" style={{ flex: "74 1 0" }}>
+              没用上：申请了，付了钱，回执上看不出来
             </span>
           </div>
         </div>
@@ -182,10 +201,10 @@ export function Sheet3() {
           →
         </div>
         <div className="bdx-settle">
-          <b>结</b>
+          <b>读</b>
           <div>
-            <span>你的余额</span>
-            <strong>− 手续费　＋ 赏金</strong>
+            <span>下一笔</span>
+            <strong>上限照着设</strong>
           </div>
         </div>
       </div>
@@ -201,56 +220,19 @@ export function Sheet3() {
         </p>
         <p className="bds-body">
           <b>只做一件小事。</b>
-          记一次只要一两万 gas。它不跑别人的任务，不破坏交易的整体性。
+          记一次只要一两万 gas。它不调用别的合约，不破坏交易的整体性。
         </p>
       </div>
     </section>
   );
 }
 
-/* ------------------------------------------------------------ 第 7 版 */
-
-const isHeartbeat = (label: string) => /heart|beat|心跳/i.test(label);
-const PLACEHOLDER_JOBS = [
-  { name: "拟合回归线", heavy: true },
-  { name: "心跳", heavy: false },
-];
-
-function JobCard({ job }: { job: Job }) {
-  const heavy = !isHeartbeat(job.label);
-  return (
-    <div className={`bds-job${heavy ? " heavy" : ""}`}>
-      <div className="bds-job-top">
-        <div>
-          <div className="bds-job-name">{job.label}</div>
-          <div className="bds-small">{heavy ? "重计算" : "只需要有人定期触发的那一类"}</div>
-        </div>
-        <span className={`bd-tag${job.active ? " solid" : ""}`}>{job.active ? "运行中" : "已停"}</span>
-      </div>
-      <div className="bds-job-fields">
-        <div>
-          <span>每单位 gas 的赏金</span>
-          <b>
-            {(Number(job.bountyPerGas) / 1e9).toLocaleString("en-US", { maximumFractionDigits: 2 })}
-            <small>gwei</small>
-          </b>
-        </div>
-        <div>
-          <span>剩余押金</span>
-          <b>
-            {fmtMon(job.escrow, 4)}
-            <small>MON</small>
-          </b>
-        </div>
-      </div>
-    </div>
-  );
-}
+/* ------------------------------------------------------------ 第 6 版 · 怎么用 */
 
 // 第三栏右上角的状态标签：要改就改这一处。
 const AGENT_MCP_STATUS = "实测";
 
-const WAY_JOB = `// 这个函数实际用多少 gas？问链。
+const WAY_READ = `// 这个函数实际用多少 gas？问链。
 uint256 gasLimit =
     backdraft.suggestTxGasLimit(target, data);`;
 const WAY_APP = `contract MyApp is BackdraftHook {
@@ -259,416 +241,117 @@ const WAY_APP = `contract MyApp is BackdraftHook {
     }
 }`;
 const MCP_TOOLS: [string, string][] = [
-  ["backdraft_status", "查队列和累计数据"],
-  ["backdraft_simulate", "这笔交易能点燃多少、赚回多少"],
-  ["backdraft_send", "通过 Backdraft 发出并返回真实分段"],
+  ["backdraft_status", "读流量计现在的读数"],
+  ["backdraft_simulate", "发之前先试算一遍"],
+  ["backdraft_send", "经过 Backdraft 发出，量一次"],
 ];
 
-export function Sheet7({ totals }: { totals: Totals | null }) {
+export function Sheet6() {
   return (
-    <section className="bd-screen" id="s7" aria-label="开放入口">
-      <Mast name="开放入口">
-        <span>suggestTxGasLimit(target, data) · 任务板读链上实时数据</span>
-      </Mast>
-
-      <div className="bds-headrow">
-        <h2 className="bds-h">设 gas 上限不用猜，问链。</h2>
-        <p className="bds-sub">三种接法，对应三种角色。</p>
-      </div>
-
-      <div className="bdx-ways">
-        <div className="bdx-way">
-          <h3>你要设上限 —— 读一次链</h3>
-          <pre className="bdx-code">
-            <code>{WAY_JOB}</code>
-          </pre>
-          <p>
-            <b>你得到：</b>这个合约的这个函数，链上实测用量加 7.5% 余量。钱包、Agent 能读，合约也能读：官方文档点名要重查 gas 设置的跨链执行、4337、keeper、relayer，现在有地方查了。
-          </p>
-        </div>
-        <div className="bdx-way purple">
-          <h3>你的应用想出一份力 —— 加一个词</h3>
-          <pre className="bdx-code">
-            <code>{WAY_APP}</code>
-          </pre>
-          <p>
-            <b>你得到：</b>用户交易里剩下的 gas 顺手完成预言机的维护任务。调用者不变，出错不影响你的函数。
-          </p>
-          <p className="bds-small">实测 · 上限 500,000 → 回收 300,493 gas，赚回 28.6%</p>
-        </div>
-        <div className="bdx-way fire">
-          <h3>
-            你是 Agent —— 装上 MCP <Tag>{AGENT_MCP_STATUS}</Tag>
-          </h3>
-          <dl className="bdx-code bdx-tools">
-            {MCP_TOOLS.map(([name, what]) => (
-              <div key={name}>
-                <dt>{name}</dt>
-                <dd>{what}</dd>
-              </div>
-            ))}
-          </dl>
-          <p>
-            <b>你得到：</b>发交易前先问一句值不值得回燃。
-          </p>
-        </div>
-      </div>
-
-      <div className="bds-board">
-        {totals
-          ? (totals.jobs.some((j) => j.active) ? totals.jobs.filter((j) => j.active) : totals.jobs).map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))
-          : PLACEHOLDER_JOBS.map((j) => (
-              <div key={j.name} className={`bds-job${j.heavy ? " heavy" : ""}`}>
-                <div className="bds-job-top">
-                  <div>
-                    <div className="bds-job-name">{j.name}</div>
-                    <div className="bds-small">{j.heavy ? "重计算" : "只需要有人定期触发的那一类"}</div>
-                  </div>
-                  <span className="bd-tag">读取中…</span>
-                </div>
-                <div className="bds-job-fields">
-                  <div>
-                    <span>每单位 gas 的赏金</span>
-                    <b>读取中…</b>
-                  </div>
-                  <div>
-                    <span>剩余押金</span>
-                    <b>读取中…</b>
-                  </div>
-                </div>
-              </div>
-            ))}
-        <div className="bds-board-note">
-          <div className="bds-tagrow">
-            <Tag>实测</Tag>
-            <span className="bds-kicker">任务板 · 队列里正在跑的任务</span>
-          </div>
-          <p className="bds-sub">它们是两种完全不同的东西，用的是同一个接口。</p>
-        </div>
-      </div>
-
-      <div className="bds-more">
-        <div className="bds-more-list">
-          <b>还能接什么</b>
-          <span className="first">按合约和函数记录真实 gas 用量（已内置）</span>
-          <span>金库复利结算</span>
-          <span>批量发放奖励</span>
-          <span>链上游戏的世界推进</span>
-          <span>过期数据清理</span>
-        </div>
-        <p className="bds-small">任务只收自成一体的：只写自己的存储，不调用别的合约，所以改不了任何人的状态。目前由合约所有者登记。</p>
-      </div>
-
-      <p className="bds-quote fire">从此设 gas 上限不用猜，问链就行。</p>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------ 引擎盖下 */
-
-const HOOD: { title: string; text: string; figure: string }[] = [
-  {
-    title: "在链上量真实消耗",
-    text: "合约在调用前后各读一次剩余 gas，把真实分段写进链上记录。",
-    figure: "2 次读数",
-  },
-  {
-    title: "记到链上，读一次就拿到",
-    text: "按“合约 + 函数”存一格：最近值、最大值、均值、次数。任何人一次只读调用拿到建议上限。",
-    figure: "62,427 → 建议 88,313",
-  },
-  {
-    title: "不破坏交易的整体性",
-    text: "记录只写自己的存储，不调用任何外部合约。队列只收自有任务，独立调用、gas 上限、失败捕获、重入锁。",
-    figure: "13 项测试",
-  },
-  {
-    title: "照着设，省八成",
-    text: "同一笔调用，按链上建议的上限直接发，对比写死 500,000。两笔都是测试网上的真实交易。",
-    figure: "手续费 −82%",
-  },
-  {
-    title: "按 Monad 的定价优化",
-    text: "Monad 读一个冷存储槽 8,100 gas，以太坊 2,100。16 个数据点压进 2 个存储槽。",
-    figure: "固定开销 90,000 → 40,000",
-  },
-  {
-    title: "用量随输入变化时：回归线",
-    text: "两个参数的直线拟合，定点数运算，每一步由剩余 gas 支付。",
-    figure: "191 步，误差 0.14%",
-  },
-];
-
-export function SheetHood() {
-  return (
-    <section className="bd-screen" id="hood" aria-label="引擎盖下">
-      <Mast name="引擎盖下">
-        <span>
-          <a href={GITHUB_URL} target="_blank" rel="noreferrer">
-            源码 github.com/slucifersz/backdraft-monad ↗
-          </a>
-        </span>
-      </Mast>
-
-      <h2 className="bds-h">引擎盖下。</h2>
-
-      <div className="bdx-hood">
-        {HOOD.map((c, i) => (
-          <div key={c.title} className="bdx-card">
-            <div className="bdx-card-top">
-              <span className="bdx-card-n">{i + 1}</span>
-              <h3>{c.title}</h3>
-              <Tag>实测</Tag>
-            </div>
-            <p>{c.text}</p>
-            <div className="bdx-card-fig">{c.figure}</div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------ 第 8 版 */
-
-type LedgerKey = "official" | "wallet" | "h300" | "h500" | "failed";
-const LEDGER: {
-  key: LedgerKey;
-  name: string;
-  limit: string;
-  burned: string;
-  steps: string;
-  fee: string;
-  bounty: string;
-  pct: string;
-}[] = [
-  { key: "official", name: "官方建议：估算 +7.5%", limit: "114,037", burned: "0", steps: "0", fee: "0.01152", bounty: "0", pct: "0%" },
-  { key: "wallet", name: "钱包默认：估算 ×1.5", limit: "159,121", burned: "0", steps: "0", fee: "0.01607", bounty: "0", pct: "0%" },
-  { key: "h300", name: "写死 300,000", limit: "300,000", burned: "126,377", steps: "7", fee: "0.03030", bounty: "0.00632", pct: "20.9%" },
-  { key: "h500", name: "写死 500,000", limit: "500,000", burned: "323,478", steps: "26", fee: "0.05050", bounty: "0.01617", pct: "32.0%" },
-  { key: "failed", name: "调用失败，上限 300,000", limit: "300,000", burned: "179,069", steps: "14", fee: "0.03030", bounty: "0.00895", pct: "29.5%" },
-];
-
-function MiniBar({ k }: { k: LedgerKey }) {
-  const r = REPLAY[k];
-  const overhead = r.gasLimit - r.mainGas - r.jobGas - r.gasLeft;
-  return (
-    <span className="bds-mini-wrap" aria-hidden="true">
-      <span className="bds-mini" style={{ width: `${(r.gasLimit / 500000) * 100}%` }}>
-        <i className="call" style={{ flex: `${r.mainGas} 1 0` }} />
-        {r.jobGas > 0 && <i className="job" style={{ flex: `${r.jobGas} 1 0` }} />}
-        <i className="left bd-hatch" style={{ flex: `${r.gasLeft} 1 0` }} />
-        <i className="over" style={{ flex: `${overhead} 1 0` }} />
-      </span>
-    </span>
-  );
-}
-
-export function Sheet8() {
-  const [open, setOpen] = useState<LedgerKey | null>(null);
-  return (
-    <section className="bd-screen" id="s8" aria-label="账本">
-      <Mast name="账本">
-        <span>固定的演示调用 crunch(8) · Monad Testnet</span>
-      </Mast>
-
-      <div className="bds-headrow">
-        <h2 className="bds-h">同一笔调用，五种上限。</h2>
-        <div className="bds-tagrow">
-          <Tag>实测</Tag>
-          <span className="bds-small">每一行都是当天在 Monad 测试网上的一笔真实交易。点开任意一行看交易哈希。</span>
-        </div>
-      </div>
-
-      <div className="bds-table">
-        <div className="bds-tr head">
-          <span>上限的设法</span>
-          <span>gas 上限</span>
-          <span>被点燃的 gas</span>
-          <span>拟合步数</span>
-          <span>手续费 (MON)</span>
-          <span>赚回 (MON)</span>
-          <span>赚回比例</span>
-          <span style={{ textAlign: "left" }}>这笔 gas 的去向</span>
-        </div>
-        {LEDGER.map((row) => {
-          const hash = REPLAY[row.key].hash;
-          const isOpen = open === row.key;
-          return (
-            <div key={row.key}>
-              <button
-                type="button"
-                className={`bds-tr${row.burned !== "0" ? " hot" : ""}`}
-                aria-expanded={isOpen}
-                onClick={() => setOpen(isOpen ? null : row.key)}
-              >
-                <span>{row.name}</span>
-                <span>{row.limit}</span>
-                <span>{row.burned}</span>
-                <span>{row.steps}</span>
-                <span>{row.fee}</span>
-                <span>{row.bounty}</span>
-                <b className="pct">{row.pct}</b>
-                <MiniBar k={row.key} />
-              </button>
-              {isOpen && (
-                <div className="bds-hash">
-                  交易{" "}
-                  <a href={`${EXPLORER}/tx/${hash}`} target="_blank" rel="noreferrer">
-                    {shortHash(hash)} ↗
-                  </a>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <p className="bds-quote">最便宜的永远是第一行。Backdraft 烧的，是后面三行已经付出去的钱。</p>
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------ 第 9 版 */
-
-function useAnimatedNumber(target: number) {
-  const [value, setValue] = useState(target);
-  const from = useRef(target);
-  useEffect(() => {
-    const start = from.current;
-    if (start === target) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      from.current = target;
-      setValue(target);
-      return;
-    }
-    const t0 = performance.now();
-    let raf = requestAnimationFrame(function tick(now) {
-      const k = Math.min(1, (now - t0) / 900);
-      setValue(start + (target - start) * (1 - Math.pow(1 - k, 3)));
-      if (k < 1) raf = requestAnimationFrame(tick);
-    });
-    return () => {
-      cancelAnimationFrame(raf);
-      from.current = target;
-    };
-  }, [target]);
-  return value;
-}
-
-// 2026-11-21 14:27 的链上快照，只在读不到实时值时显示。
-// 读不到链上数据时显示的快照（当前合约，2026-11-21 18:30）。
-const SNAPSHOT = { gasRecycled: 283706, burns: 1, units: 25, bountyMon: "0.0142" };
-
-const CONTRACTS: { name: string; note?: string; address: string }[] = [
-  { name: "Afterburner", note: "（Backdraft 的核心合约）", address: ADDR.afterburner },
-  { name: "GasModel", address: ADDR.gasModel },
-  { name: "DemoApp", address: ADDR.demoApp },
-  { name: "Heartbeat", address: ADDR.heartbeat },
-];
-
-export function Sheet9({ totals }: { totals: Totals | null }) {
-  const gas = useAnimatedNumber(totals ? totals.gasRecycled : SNAPSHOT.gasRecycled);
-  return (
-    <section className="bd-screen" id="s9" aria-label="存证与下一步">
-      <Mast name="存证">
-        <span>Monad Testnet · chainId 10143</span>
+    <section className="bd-screen" id="s6" aria-label="怎么用">
+      <Mast name="怎么用">
+        <span>suggestTxGasLimit(target, data) · Monad Testnet · chainId 10143</span>
       </Mast>
 
       <h2 className="bds-h">没有计量，就没有优化。</h2>
 
-      <div className="bds-proof">
-        <div className="bds-proof-col">
-          <div className="bds-tagrow">
-            <span className="bds-kicker">都在链上</span>
-            <Tag>实测</Tag>
-            {!totals && <span className="bd-tag">快照 · 2026-11-21 14:27</span>}
+      <div className="bdu-grid">
+        <div className="bdu-col">
+          <span className="bds-kicker">怎么接</span>
+          <div className="bdu-ways">
+            <div className="bdx-way">
+              <div>
+                <h3>你要设上限 —— 读一次链</h3>
+                <p>
+                  <b>你得到：</b>这个合约的这个函数，链上实测用量加 7.5%
+                  余量。官方文档点名要重查 gas 设置的跨链执行、4337、keeper、relayer，现在有地方查了。
+                </p>
+              </div>
+              <pre className="bdx-code">
+                <code>{WAY_READ}</code>
+              </pre>
+            </div>
+            <div className="bdx-way purple">
+              <div>
+                <h3>你的应用想出一份力 —— 加一个词</h3>
+                <p>
+                  <b>你得到：</b>用户的每一笔交易经过时顺手量一次、记一次。调用者不变，出错不影响你的函数。
+                </p>
+              </div>
+              <pre className="bdx-code">
+                <code>{WAY_APP}</code>
+              </pre>
+            </div>
+            <div className="bdx-way fire">
+              <div>
+                <h3>
+                  你是 Agent —— 装上 MCP <Tag>{AGENT_MCP_STATUS}</Tag>
+                </h3>
+                <p>
+                  <b>你得到：</b>没有钱包替你设上限。发交易前先读一次流量计。
+                </p>
+              </div>
+              <dl className="bdx-code bdx-tools">
+                {MCP_TOOLS.map(([name, what]) => (
+                  <div key={name}>
+                    <dt>{name}</dt>
+                    <dd>{what}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
-          <div>
-            <div className="bds-big">
-              {Math.round(gas).toLocaleString("en-US")}
-              <small>gas</small>
-            </div>
-            <div className="bds-kicker" style={{ marginTop: "0.6vh" }}>
-              累计被点燃的 gas
-            </div>
-          </div>
-          <div className="bds-stats">
-            <div>
-              <span>点火的交易笔数</span>
-              <b>{totals ? fmtGas(totals.burns) : SNAPSHOT.burns}</b>
-            </div>
-            <div>
-              <span>完成的工作单位</span>
-              <b>{totals ? fmtGas(totals.units) : SNAPSHOT.units}</b>
-            </div>
-            <div>
-              <span>付出的赏金（MON）</span>
-              <b>{totals ? fmtMon(totals.bountyPaid, 4) : SNAPSHOT.bountyMon}</b>
-            </div>
-          </div>
-          <ul className="bds-addrs">
-            {CONTRACTS.map((c) => (
-              <li key={c.name}>
-                <span>
-                  <b>{c.name}</b>
-                  {c.note}
-                </span>
-                <a href={`${EXPLORER}/address/${c.address}`} target="_blank" rel="noreferrer">
-                  {c.address}
-                </a>
-                <em>源码已验证</em>
-              </li>
-            ))}
-          </ul>
-          <p className="bds-small">
-            10 项合约测试全部通过 · Monad Testnet · chainId 10143 · 源码{" "}
-            <a href={GITHUB_URL} target="_blank" rel="noreferrer">
-              github.com/slucifersz/backdraft-monad ↗
-            </a>
-          </p>
         </div>
 
-        <div className="bds-proof-col">
-          <span className="bds-kicker">接下来</span>
+        <div className="bdu-col">
+          <span className="bds-kicker">接下来三步</span>
           <ul className="bds-next">
             <li>
-              <span className="bd-tag">规划</span>
-              <b>写成 MRC，成为生态的公共登记表</b>
-              <p>草案已在仓库。钱包和 SDK 发交易前读一次，官方研究的结论是多付的 gas 能从三成降到一成多；同样的区块能多装约四分之一的交易（按官方数据推算）。</p>
-            </li>
-            <li>
-              <Tag>已完成</Tag>
-              <b>给 Agent 用：问链，再发交易</b>
-              <p>
-                Agent 自己构造交易，没有钱包替它设上限。仓库里的 MCP 和 skill 让它发交易前先问预言机。
-              </p>
+              <Tag>草案已写</Tag>
+              <b>提成 MRC</b>
+              <p>登记表的接口已整理成 MRC 草案，在仓库里。</p>
             </li>
             <li>
               <span className="bd-tag">规划</span>
-              <b>智能账户模块</b>
-              <p>让每一笔交易在末尾自动回燃，应用和调用者身份都不变。</p>
+              <b>进钱包和 SDK</b>
+              <p>发交易前读一次流量计，一行代码。</p>
             </li>
             <li>
               <span className="bd-tag">规划</span>
-              <b>按赏金排序的任务市场，和挂任务的界面。</b>
+              <b>补全历史</b>
+              <p>等官方通过 RPC 公开真实用量后，把历史数据批量补进来。</p>
             </li>
           </ul>
+          <p className="bdu-est">
+            <Tag>估算</Tag>
+            按官方研究的结论，全网多付的 gas 能从三成降到一成多；同样的区块能多装约四分之一的交易。算法：多付的占比从
+            32.5% 降到约 15%，执行的占比从 67.5% 升到约 85%，85 ÷ 67.5 ≈ 1.26（
+            <a href={CATEGORY_URL} target="_blank" rel="noreferrer">
+              Category Labs 数据 ↗
+            </a>
+            ）。
+          </p>
           <p className="bds-small">
-            今天的边界：只有经过它的交易才会被计量；只记最大值，输入变化大的函数还不够准，使用前要先估算一次；通过包装入口测量时调用者会变，依赖调用者身份的调用量不了；合约未经审计，只在测试网运行。
+            今天的边界：只有经过它的交易才会被计量；只记最大值，输入变化大的函数还不够准，使用前要先估算一次；通过包装入口测量时调用者会变；合约未经审计，只在测试网运行。
           </p>
         </div>
       </div>
 
+      <p className="bdu-proofline">
+        <span>核心合约</span>
+        <a href={`${EXPLORER}/address/${ADDR.afterburner}`} target="_blank" rel="noreferrer">
+          {ADDR.afterburner}
+        </a>
+        <span>（源码已验证）· 13 项测试 ·</span>
+        <a href={GITHUB_URL} target="_blank" rel="noreferrer">
+          github.com/slucifersz/backdraft-monad ↗
+        </a>
+      </p>
+
       <div className="bds-end">
         <div className="bds-end-fire">Backdraft：Monad 的流量计。</div>
         <div className="bds-invite">
-          <p>现场各位钱包里上午领的测试币，现在就可以拿来点一把火。</p>
-          <p className="bds-small" style={{ color: "var(--ink)" }}>
-            网址：（上线后填）
-          </p>
+          <p>最后一版是控制台，可以自己调参数、试算、发送。</p>
         </div>
       </div>
 

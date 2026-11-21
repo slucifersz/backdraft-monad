@@ -364,7 +364,7 @@ button.bdc-tr[aria-pressed="true"] {
 }
 
 
-/* 链上预言机：建议上限 + 按建议直接发 */
+/* 链上流量计：建议上限 + 按建议直接发 */
 .bdc-oracle {
   display: flex;
   align-items: center;
@@ -394,4 +394,12 @@ button.bdc-tr[aria-pressed="true"] {
   background: var(--fire, #ff4311);
   color: #000;
   padding: 0 4px;
+}
+
+/* 流量计改版：中间只有三个大数字 */
+.bdc-stats.three {
+  grid-template-columns: 1.9fr 1fr 1fr;
+}
+.bdc-stats.three b i {
+  margin-left: 0.25em;
 }
