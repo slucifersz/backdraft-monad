@@ -20,7 +20,7 @@ export const RPC_URL =
 export const EXPLORER = "https://testnet.monadscan.com";
 
 export const ADDR = {
-  afterburner: "0xb22CA6B2090367F2487Caf0133Be3B2b18E7f607",
+  afterburner: "0xc7c9aA27aBD518AE4E321A91F33d2CB8e4338AbB",
   gasModel: "0x54e95229e1259D1A16E9f242f9816413bF9634b1",
   demoApp: "0x9097f732659811c4119a28B887ED8f829E11a7A5",
   heartbeat: "0xc02fd9FC8aE928555f8F0672709D24EAa8fe3251",
@@ -38,6 +38,7 @@ export const afterburnerAbi = parseAbi([
   "function stats(address target, bytes4 selector) view returns (uint64 last, uint64 max, uint64 avg, uint32 count, uint32 updatedAt)",
   "function suggest(address target, bytes4 selector) view returns (uint256 callGas, uint256 samples)",
   "function suggestTxGasLimit(address target, bytes data) view returns (uint256)",
+  "function suggestFor(address target, bytes data) view returns (uint256 gasLimit, uint256 maxUsed, uint256 samples, bool exact)",
   "event Recorded(address indexed target, bytes4 indexed selector, uint256 gasUsed, uint256 maxGas, uint256 samples)",
   "event Burned(address indexed sender, address indexed target, bool mainOk, uint256 mainGas, uint256 jobGas, uint256 units, uint256 bounty, uint256 gasLeft)",
   "event JobRan(uint256 indexed id, address indexed sender, uint256 gasUsed, uint256 units, uint256 bounty)",
@@ -264,14 +265,15 @@ export type Suggestion = {
 
 /** Ask the on-chain oracle what gas limit this call needs. */
 export async function readSuggestion(call: CallKind): Promise<Suggestion> {
-  const data = appCalldata(call);
-  const selector = data.slice(0, 10) as Hex;
-  const ab = { address: ADDR.afterburner, abi: afterburnerAbi } as const;
-  const [gasLimit, stat] = await Promise.all([
-    publicClient.readContract({ ...ab, functionName: "suggestTxGasLimit", args: [ADDR.demoApp, data] }),
-    publicClient.readContract({ ...ab, functionName: "stats", args: [ADDR.demoApp, selector] }),
-  ]);
-  return { gasLimit: Number(gasLimit), lastUsed: Number(stat[0]), maxUsed: Number(stat[1]), samples: stat[3] };
+  // The meter keeps one record per exact call and falls back to the largest
+  // usage seen for the function, so a heavier input does not inflate this one.
+  const r = await publicClient.readContract({
+    address: ADDR.afterburner,
+    abi: afterburnerAbi,
+    functionName: "suggestFor",
+    args: [ADDR.demoApp, appCalldata(call)],
+  });
+  return { gasLimit: Number(r[0]), maxUsed: Number(r[1]), lastUsed: Number(r[1]), samples: Number(r[2]) };
 }
 
 export type DirectTx = {

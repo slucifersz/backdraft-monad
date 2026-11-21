@@ -56,10 +56,15 @@ contract Afterburner {
     /// @dev Suggested limits carry the 7.5% buffer Category Labs measured for Monad.
     uint256 public constant SUGGEST_BUFFER_BPS = 10_750;
     /// @dev Gas needed to write one measurement; skipped when less is left.
-    uint256 internal constant RECORD_GAS = 45_000;
+    uint256 internal constant RECORD_GAS = 80_000;
 
     /// @notice The gas oracle: target contract => function selector => measured usage.
     mapping(address => mapping(bytes4 => Stat)) public stats;
+
+    /// @notice The same measurements keyed by the exact call (target + full calldata).
+    /// A function whose gas depends on its arguments has one record per distinct
+    /// call, so a heavy call does not inflate the suggestion for a light one.
+    mapping(bytes32 => Stat) public exactStats;
 
     /// @notice Jobs are curated. Only self-contained jobs that touch nothing but
     /// their own storage are admitted, so nothing a job does can alter the state
@@ -192,7 +197,12 @@ contract Afterburner {
         if (!mainOk && msg.value != 0) _pay(payable(msg.sender), msg.value);
 
         // First use of the leftover: write what this call really used to the oracle.
-        if (mainOk && gasleft() > RECORD_GAS) _record(target, data.length >= 4 ? bytes4(data[:4]) : bytes4(0), mainGas);
+        if (mainOk && gasleft() > RECORD_GAS) {
+            bytes4 selector = data.length >= 4 ? bytes4(data[:4]) : bytes4(0);
+            _record(stats[target][selector], mainGas);
+            _record(exactStats[keccak256(abi.encodePacked(target, data))], mainGas);
+            emit Recorded(target, selector, mainGas, stats[target][selector].max, stats[target][selector].count);
+        }
 
         (jobGas, units, bounty) = _burn(payable(msg.sender));
         emit Burned(msg.sender, target, mainOk, mainGas, jobGas, units, bounty, gasleft());
@@ -217,29 +227,45 @@ contract Afterburner {
     /// @notice Gas limit to set on a transaction that calls `target` with `data`
     /// directly: the 21,000 base cost, the calldata cost, and the suggested call
     /// gas. Zero if this function was never measured.
+    /// @notice Gas limit to set on a transaction that calls `target` with `data`
+    /// directly: the 21,000 base cost, the calldata cost, and the suggested call
+    /// gas. Uses the record for this exact call when there is one, otherwise the
+    /// largest usage seen for the function. Zero if neither was ever measured.
     function suggestTxGasLimit(address target, bytes calldata data) external view returns (uint256 gasLimit) {
-        (uint256 callGas, uint256 samples) =
-            suggest(target, data.length >= 4 ? bytes4(data[:4]) : bytes4(0));
-        if (samples == 0) return 0;
+        (gasLimit,,,) = suggestFor(target, data);
+    }
+
+    /// @notice Same as suggestTxGasLimit, plus what the suggestion is based on.
+    /// @return gasLimit suggested transaction gas limit (0 if never measured)
+    /// @return maxUsed  largest real usage behind the suggestion
+    /// @return samples  number of measurements behind the suggestion
+    /// @return exact    true if it comes from this exact call, false if from the function as a whole
+    function suggestFor(address target, bytes calldata data)
+        public
+        view
+        returns (uint256 gasLimit, uint256 maxUsed, uint256 samples, bool exact)
+    {
+        Stat storage st = exactStats[keccak256(abi.encodePacked(target, data))];
+        exact = st.count != 0;
+        if (!exact) st = stats[target][data.length >= 4 ? bytes4(data[:4]) : bytes4(0)];
+        samples = st.count;
+        if (samples == 0) return (0, 0, 0, false);
+        maxUsed = st.max;
         uint256 dataGas;
         for (uint256 i; i < data.length; ++i) {
             dataGas += data[i] == 0 ? 4 : 16;
         }
-        gasLimit = 21_000 + dataGas + callGas;
+        gasLimit = 21_000 + dataGas + (maxUsed * SUGGEST_BUFFER_BPS) / 10_000;
     }
 
-    function _record(address target, bytes4 selector, uint256 used) internal {
-        Stat storage st = stats[target][selector];
+    function _record(Stat storage st, uint256 used) internal {
         uint64 u = uint64(used);
-        uint64 max = st.max;
         uint32 count = st.count;
-        if (u > max) max = u;
         st.last = u;
-        st.max = max;
+        if (u > st.max) st.max = u;
         st.avg = count == 0 ? u : uint64((uint256(st.avg) * 7 + u) / 8);
         st.count = count + 1;
         st.updatedAt = uint32(block.timestamp);
-        emit Recorded(target, selector, used, max, uint256(count) + 1);
     }
 
     function claim() external lock {

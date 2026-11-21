@@ -180,6 +180,22 @@ contract AfterburnerTest is Test {
         assertTrue(ok, "the suggested limit is enough");
     }
 
+    function test_heavyCallDoesNotInflateTheSuggestionForALightOne() public {
+        bytes memory light = abi.encodeCall(DemoApp.crunch, (8));
+        bytes memory heavy = abi.encodeCall(DemoApp.crunch, (30));
+        _exec(600_000, light);
+        _exec(600_000, light);
+        uint256 before = ab.suggestTxGasLimit(address(app), light);
+        _exec(900_000, heavy);
+        assertEq(ab.suggestTxGasLimit(address(app), light), before, "light call keeps its own record");
+        assertGt(ab.suggestTxGasLimit(address(app), heavy), before, "heavy call gets a bigger one");
+
+        // a call that was never measured falls back to the function-wide maximum
+        (uint256 limit,,, bool exact) = ab.suggestFor(address(app), abi.encodeCall(DemoApp.crunch, (12)));
+        assertFalse(exact);
+        assertGe(limit, ab.suggestTxGasLimit(address(app), heavy) - 300);
+    }
+
     function test_oracleIgnoresFailedCallsAndUnknownFunctions() public {
         _exec(500_000, abi.encodeCall(DemoApp.soldOut, ()));
         (,,, uint32 count,) = ab.stats(address(app), DemoApp.soldOut.selector);

@@ -131,7 +131,7 @@ contract MyApp is BackdraftHook {
 
 | 合约 | 地址 |
 | --- | --- |
-| Afterburner（队列与包装入口；合约沿用项目最初的名字） | [`0xb22CA6B2090367F2487Caf0133Be3B2b18E7f607`](https://testnet.monadscan.com/address/0xb22CA6B2090367F2487Caf0133Be3B2b18E7f607) |
+| Afterburner（队列与包装入口；合约沿用项目最初的名字） | [`0xc7c9aA27aBD518AE4E321A91F33d2CB8e4338AbB`](https://testnet.monadscan.com/address/0xc7c9aA27aBD518AE4E321A91F33d2CB8e4338AbB) |
 | GasModel（链上训练的模型） | [`0x54e95229e1259D1A16E9f242f9816413bF9634b1`](https://testnet.monadscan.com/address/0x54e95229e1259D1A16E9f242f9816413bF9634b1) |
 | DemoApp（代表一个普通应用） | [`0x9097f732659811c4119a28B887ED8f829E11a7A5`](https://testnet.monadscan.com/address/0x9097f732659811c4119a28B887ED8f829E11a7A5) |
 | HookedApp（用 `recycle` 修饰符接入的示例应用） | [`0x501ee51685e01521776EF1639dB573A9b9969078`](https://testnet.monadscan.com/address/0x501ee51685e01521776EF1639dB573A9b9969078) |

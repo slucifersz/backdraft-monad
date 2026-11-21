@@ -3,7 +3,7 @@
 - 状态：草案（Draft），尚未提交到 Monad 的提案流程
 - 类型：Standards Track / 应用层
 - 作者：Backdraft（Monad Blitz @ 广州，2026-11-21）
-- 参考实现：[`contracts/src/Afterburner.sol`](../contracts/src/Afterburner.sol)，Monad Testnet `0xb22CA6B2090367F2487Caf0133Be3B2b18E7f607`
+- 参考实现：[`contracts/src/Afterburner.sol`](../contracts/src/Afterburner.sol)，Monad Testnet `0xc7c9aA27aBD518AE4E321A91F33d2CB8e4338AbB`
 
 ## 摘要
 

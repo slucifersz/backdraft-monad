@@ -69,6 +69,22 @@
     "tx": "0x9ed85da808443414f43e3fd264971971e34db340416f9d3f11b1abd65d1ca5eb",
     "chainId": 10143,
     "deployedAt": "2026-11-21T10:13:02Z",
+    "current": false
+  },
+  {
+    "name": "Afterburner",
+    "address": "0xc7c9aA27aBD518AE4E321A91F33d2CB8e4338AbB",
+    "tx": "0x0e59bc427368009cfbdd0ddd49a2fff8f27b00d203f6878f0ecedd944763e0e3",
+    "chainId": 10143,
+    "deployedAt": "2026-11-21T11:10:30Z",
+    "current": false
+  },
+  {
+    "name": "Afterburner",
+    "address": "0x25EAC9115D29cC56926d9c8048747Cc7ed12F852",
+    "tx": "0xf38a5b1810f81e3fb30a1c78b6dbdaf0d541d4fc489fe6f930fa4f10d0515a96",
+    "chainId": 10143,
+    "deployedAt": "2026-11-21T11:14:25Z",
     "current": true
   }
 ]
