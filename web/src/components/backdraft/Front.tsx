@@ -40,7 +40,7 @@ export default function Front({ active }: { active: boolean }) {
         <div className="bd-brand">
           BACKDRAFT<span>回燃</span>
         </div>
-        <div className="bd-meta">一个不用喂钱的链上 Gas 预言机 · Monad Blitz @ 广州 · 2026-11-21</div>
+        <div className="bd-meta">Monad 的流量计 · 链上 Gas 计量层 · Monad Blitz @ 广州 · 2026-11-21</div>
       </header>
 
       <div className="bd-front-main">
@@ -57,13 +57,13 @@ export default function Front({ active }: { active: boolean }) {
         <div className="bd-front-side">
           <h1 className="bd-headline">付了钱，没人用。</h1>
           <p className="bd-sub">
-            回执里查不到它们到底用了多少。
+            回执只写你申请了多少，不写你用了多少。
             <br />
-            Backdraft 让这个数字上了链，一分钱不用多花。
+            Backdraft 是 Monad 的流量计。
           </p>
           <p className="bd-body">
             <span className="bd-purple">Monad</span>{" "}
-            主网上，每天有这么多算力已经有人付了钱、占好了位置，却什么都没算。够塞满 1,348 个区块。
+            主网上，每天有这么多 gas 付了钱却没用上，而且没有地方能查到每笔交易真实用了多少。没有计量，就没有优化。
           </p>
         </div>
       </div>
@@ -92,14 +92,14 @@ export default function Front({ active }: { active: boolean }) {
       <SinceOpen />
 
       <div className="bd-front-foot">
-        <div className="bd-block">我们把它点着了。</div>
+        <div className="bd-block">我们给它装了一块表。</div>
         <div className="bd-col">
           <b>只有 Monad 有</b>
           <p>别的链把没用完的 gas 退给你。Monad 不退：交易结束之前，这部分额度已经付过钱。</p>
         </div>
         <div className="bd-col">
-          <b>回燃</b>
-          <p>用这笔本来要作废的 gas，把“这类调用到底用了多少”记到链上。下一笔照着设，就不用再多付。</p>
+          <b>流量计</b>
+          <p>交易经过时量出真实用量，用本来要作废的 gas 记到链上。不用任何人出钱维护。下一笔照着设，就不再多付。</p>
         </div>
         <a className="bd-btn" href="#s4">
           点火 ↓

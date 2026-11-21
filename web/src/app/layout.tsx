@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Backdraft 回燃 — put paid-for gas to work on Monad",
+  title: "Backdraft 回燃 — Monad 的流量计",
   description:
-    "On Monad you pay for your gas limit, not what you use. Backdraft spends the leftover on queued jobs and pays you back.",
+    "Monad receipts show the gas you reserved, not the gas you used. Backdraft measures real usage on-chain and records it with gas that was already paid for.",
 };
 
 export default function RootLayout({

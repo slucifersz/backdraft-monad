@@ -283,7 +283,7 @@ export function Sheet7({ totals }: { totals: Totals | null }) {
             <code>{WAY_JOB}</code>
           </pre>
           <p>
-            <b>你得到：</b>这个合约的这个函数，链上实测用量加 7.5% 余量。钱包、脚本、合约都能读。
+            <b>你得到：</b>这个合约的这个函数，链上实测用量加 7.5% 余量。钱包、Agent 能读，合约也能读：官方文档点名要重查 gas 设置的跨链执行、4337、keeper、relayer，现在有地方查了。
           </p>
         </div>
         <div className="bdx-way purple">
@@ -568,7 +568,7 @@ export function Sheet9({ totals }: { totals: Totals | null }) {
         <span>Monad Testnet · chainId 10143</span>
       </Mast>
 
-      <h2 className="bds-h">付过钱的 gas，一格都不该浪费。</h2>
+      <h2 className="bds-h">没有计量，就没有优化。</h2>
 
       <div className="bds-proof">
         <div className="bds-proof-col">
@@ -627,8 +627,8 @@ export function Sheet9({ totals }: { totals: Totals | null }) {
           <ul className="bds-next">
             <li>
               <span className="bd-tag">规划</span>
-              <b>接进钱包和 SDK</b>
-              <p>发交易前读一次预言机，自动用建议的上限。官方研究的结论是，这样能把多付的 gas 从三成降到一成多。</p>
+              <b>写成 MRC，成为生态的公共登记表</b>
+              <p>草案已在仓库。钱包和 SDK 发交易前读一次，官方研究的结论是多付的 gas 能从三成降到一成多；同样的区块能多装约四分之一的交易（按官方数据推算）。</p>
             </li>
             <li>
               <Tag>已完成</Tag>
@@ -655,7 +655,7 @@ export function Sheet9({ totals }: { totals: Totals | null }) {
       </div>
 
       <div className="bds-end">
-        <div className="bds-end-fire">没烧完的 gas，回头再烧一次。</div>
+        <div className="bds-end-fire">Backdraft：Monad 的流量计。</div>
         <div className="bds-invite">
           <p>现场各位钱包里上午领的测试币，现在就可以拿来点一把火。</p>
           <p className="bds-small" style={{ color: "var(--ink)" }}>

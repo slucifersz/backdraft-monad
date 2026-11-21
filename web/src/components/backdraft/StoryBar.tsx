@@ -52,7 +52,7 @@ function segFor(active: string, main: Burn, fail: Burn): Seg {
     case "s8":
       return full(["", "写死的上限：这一大段已经付出去了", "", ""]);
     default:
-      return full(["", "没烧完的 gas，回头再烧一次", "", ""]);
+      return full(["", "没有计量，就没有优化", "", ""]);
   }
 }
 

@@ -1,6 +1,8 @@
 # Backdraft 回燃
 
-**一个不用喂钱的链上 Gas 预言机。**
+**Monad 的流量计：一个不用喂钱的链上 Gas 计量层。**
+
+水利的第一件事是测流量，不知道流量就没法调度。Monad 上每一笔交易都有流量，却没有流量计：回执显示的是你申请了多少，不是你用了多少。
 
 Monad 的回执里缺一个数字：一笔交易到底用了多少 gas。Monad 按 gas 上限收费、不退还，回执和区块浏览器上的 `gasUsed` 显示的就是上限本身。Backdraft 在交易经过时量出真实用量，再用这笔交易里本来就要作废的剩余 gas，把结果按“合约 + 函数”记到链上。之后任何钱包、应用或 Agent 读一次链，就能拿到建议的 gas 上限。
 
@@ -32,6 +34,8 @@ uint256 gasLimit = backdraft.suggestTxGasLimit(target, data);
 ```
 
 对于用量随输入规模变化的函数，单个数字不够，`GasModel` 用剩余的 gas 在链上拟合一条直线 `gas ≈ w·n + b`（两个参数），191 步后预测误差 0.14%。
+
+这份登记表的接口已经整理成一份 MRC 草案：[docs/MRC-draft-gas-usage-registry.md](docs/MRC-draft-gas-usage-registry.md)。
 
 Monad Blitz @ 广州，2026-11-21。合约、脚本、页面和文档全部在活动当天完成，赛前只有 Foundry / Next.js 的空白脚手架。
 
