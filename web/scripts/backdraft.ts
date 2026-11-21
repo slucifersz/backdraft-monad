@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Afterburner command line. Runs with plain Node 22.18+ / 24 (no build step):
+// Backdraft command line. Runs with plain Node 22.18+ / 24 (no build step):
 //
-//   node --env-file=.env.local scripts/afterburn.ts status
-//   node --env-file=.env.local scripts/afterburn.ts sim  --to 0x.. --data 0x.. --gas 300000
-//   node --env-file=.env.local scripts/afterburn.ts send --to 0x.. --data 0x.. --gas 300000
-//   node --env-file=.env.local scripts/afterburn.ts send --crunch 8 --gas 300000      (demo app)
-//   node --env-file=.env.local scripts/afterburn.ts send --sold-out --gas 300000      (a call that fails)
+//   node --env-file=.env.local scripts/backdraft.ts status
+//   node --env-file=.env.local scripts/backdraft.ts sim  --to 0x.. --data 0x.. --gas 300000
+//   node --env-file=.env.local scripts/backdraft.ts send --to 0x.. --data 0x.. --gas 300000
+//   node --env-file=.env.local scripts/backdraft.ts send --crunch 8 --gas 300000      (demo app)
+//   node --env-file=.env.local scripts/backdraft.ts send --sold-out --gas 300000      (a call that fails)
 //
-// The signing key is read from AFTERBURNER_KEY (or NEXT_PUBLIC_DEMO_KEY). Every
+// The signing key is read from BACKDRAFT_KEY (or NEXT_PUBLIC_DEMO_KEY). Every
 // command prints one JSON object on stdout so an agent can parse it.
 import { createWalletClient, encodeFunctionData, formatEther, http, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -45,8 +45,8 @@ function target(): { to: Hex; data: Hex } {
 }
 
 function account() {
-  const key = (process.env.AFTERBURNER_KEY ?? process.env.NEXT_PUBLIC_DEMO_KEY) as Hex | undefined;
-  if (!key) throw new Error("set AFTERBURNER_KEY to the private key that should send the transaction");
+  const key = (process.env.BACKDRAFT_KEY ?? process.env.AFTERBURNER_KEY ?? process.env.NEXT_PUBLIC_DEMO_KEY) as Hex | undefined;
+  if (!key) throw new Error("set BACKDRAFT_KEY to the private key that should send the transaction");
   return privateKeyToAccount(key);
 }
 
@@ -143,7 +143,7 @@ async function send() {
 
 const commands: Record<string, () => Promise<void>> = { status, sim, send };
 if (!cmd || !commands[cmd]) {
-  console.error("usage: afterburn.ts <status|sim|send> [--to 0x.. --data 0x.. | --crunch <n> | --sold-out] [--gas <limit>]");
+  console.error("usage: backdraft.ts <status|sim|send> [--to 0x.. --data 0x.. | --crunch <n> | --sold-out] [--gas <limit>]");
   process.exit(1);
 }
 commands[cmd]().catch((e) => {

@@ -1,8 +1,10 @@
-# Afterburner 加力燃烧
+# Backdraft 回燃
 
-**在 Monad 上，交易里付了钱却没用完的 gas，拿来替别人执行任务，并把赏金还给你。**
+**没烧完的 gas，回头再烧一次。**
 
-> On Monad a transaction is charged for its gas *limit*, not for the gas it uses, and nothing is refunded. Afterburner spends the leftover — gas that is already paid for and about to be thrown away — on a queue of posted jobs, and pays the job bounty back to the sender. In the demo the queued job trains a small on-chain model that predicts how much gas a call needs.
+在 Monad 上，交易里付了钱却没用完的 gas，拿来替别人执行任务，并把赏金还给你。
+
+> On Monad a transaction is charged for its gas *limit*, not for the gas it uses, and nothing is refunded. Backdraft spends the leftover — gas that is already paid for and about to be thrown away — on a queue of posted jobs, and pays the job bounty back to the sender. In the demo the queued job trains a small on-chain model that predicts how much gas a call needs.
 
 Monad Blitz @ 广州，2026-11-21。合约、脚本和文档全部在活动当天完成，赛前只有 Foundry / Next.js 的空白脚手架。
 
@@ -17,7 +19,7 @@ Monad 按交易声明的 gas 上限收费，不按实际消耗收费，也不退
 
 ## 做法
 
-Afterburner 是一个链上的任务队列，加一个包装入口。
+Backdraft 是一个链上的任务队列，加一个包装入口。
 
 1. **挂任务。** 任何人可以登记一个任务合约并押一笔赏金，按任务实际消耗的 gas 计价。任务合约只需要实现一个函数 `work()`：拿到多少 gas 就做多少事，返回完成的工作量。
 2. **回收。** 发送者通过 `exec(target, data)` 发起自己的调用。调用结束后，合约用 `gasleft()` 查出还剩多少 gas，在留足收尾余量的前提下依次执行队列里的任务，赏金直接付给发送者。
@@ -31,7 +33,7 @@ Afterburner 是一个链上的任务队列，加一个包装入口。
 
 ### 它不鼓励多留 gas
 
-每单位 gas 的赏金被合约限制在该笔交易 gas 价格的 90% 以内（`MAX_REFUND_BPS`），所以拿回的永远少于多付的。把上限设紧仍然是最划算的做法，Afterburner 回收的是不得不留的那部分安全余量，以及没有被设紧的那些交易。
+每单位 gas 的赏金被合约限制在该笔交易 gas 价格的 90% 以内（`MAX_REFUND_BPS`），所以拿回的永远少于多付的。把上限设紧仍然是最划算的做法，Backdraft 回收的是不得不留的那部分安全余量，以及没有被设紧的那些交易。
 
 ## 演示里的任务：用浪费的 gas 训练一个预测 gas 的模型
 
@@ -44,7 +46,7 @@ Afterburner 是一个链上的任务队列，加一个包装入口。
 
 ## 当天实测（Monad 测试网）
 
-同一个调用（演示应用 `crunch(8)`，自身需要约 6.2 万 gas），用不同的上限通过 Afterburner 发出：
+同一个调用（演示应用 `crunch(8)`，自身需要约 6.2 万 gas），用不同的上限通过 Backdraft 发出：
 
 | 上限的设法 | gas 上限 | 回收执行的 gas | 训练步数 | 手续费 (MON) | 赚回 (MON) | 赚回比例 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -65,7 +67,7 @@ Afterburner 是一个链上的任务队列，加一个包装入口。
 
 | 合约 | 地址 |
 | --- | --- |
-| Afterburner（队列与包装入口） | [`0xAF019654d479917bd38ADa0648eb9AdbFfc6db79`](https://testnet.monadscan.com/address/0xAF019654d479917bd38ADa0648eb9AdbFfc6db79) |
+| Afterburner（队列与包装入口；合约沿用项目最初的名字） | [`0xAF019654d479917bd38ADa0648eb9AdbFfc6db79`](https://testnet.monadscan.com/address/0xAF019654d479917bd38ADa0648eb9AdbFfc6db79) |
 | GasModel（链上训练的模型） | [`0x54e95229e1259D1A16E9f242f9816413bF9634b1`](https://testnet.monadscan.com/address/0x54e95229e1259D1A16E9f242f9816413bF9634b1) |
 | DemoApp（代表一个普通应用） | [`0x9097f732659811c4119a28B887ED8f829E11a7A5`](https://testnet.monadscan.com/address/0x9097f732659811c4119a28B887ED8f829E11a7A5) |
 | Heartbeat（最简单的任务） | [`0xc02fd9FC8aE928555f8F0672709D24EAa8fe3251`](https://testnet.monadscan.com/address/0xc02fd9FC8aE928555f8F0672709D24EAa8fe3251) |
@@ -85,7 +87,7 @@ Afterburner 是一个链上的任务队列，加一个包装入口。
 如实说明，这是一个机制演示，不是可以直接上线的产品：
 
 - **任务什么时候被执行不确定。** 取决于有没有带剩余 gas 的交易经过，只适合不赶时间的操作，例如结算、复利、批量发放。
-- **包装入口会改变调用者。** 通过 `exec` 发起时，目标合约看到的调用者是 Afterburner，依赖调用者身份的应用不能直接这样用。正式的形态应当是智能账户（ERC-4337 / EIP-7702）里的一个执行模块，让用户自己的账户在交易末尾回收，调用者不变。今天没有做。
+- **包装入口会改变调用者。** 通过 `exec` 发起时，目标合约看到的调用者是 Backdraft 的合约，依赖调用者身份的应用不能直接这样用。正式的形态应当是智能账户（ERC-4337 / EIP-7702）里的一个执行模块，让用户自己的账户在交易末尾回收，调用者不变。今天没有做。
 - **并行执行。** 所有经过队列的交易都会读写队列和任务合约的状态，彼此冲突，在 Monad 上会被串行重新执行。训练这类有先后顺序的任务无法避免这一点。
 - **固定开销。** 在 Monad 上读一个冷存储槽要 8,100 gas。回收一次的固定开销约 5 万 gas，所以剩余少于约 9 万 gas 的交易回收不到东西。我们把模型的训练数据压进两个存储槽，把单次训练的固定开销从约 9 万降到约 4 万。
 - **未经审计。** 只在测试网上运行过。
@@ -93,9 +95,9 @@ Afterburner 是一个链上的任务队列，加一个包装入口。
 ## 仓库结构
 
 ```
-contracts/   Foundry 工程：Afterburner、GasModel、DemoApp、测试、部署脚本
+contracts/   Foundry 工程：Afterburner（Backdraft 的核心合约）、GasModel、DemoApp、测试、部署脚本
 web/         Next.js 前端；src/lib/chain.ts 是读合约、模拟、发交易的数据层
-web/scripts/ afterburn.ts 命令行
+web/scripts/ backdraft.ts 命令行
 skills/      给编码 Agent 用的 skill
 ```
 
@@ -107,21 +109,21 @@ skills/      给编码 Agent 用的 skill
 cd contracts && forge test -vv
 ```
 
-命令行（需要 Node 24；签名私钥放在环境变量 `AFTERBURNER_KEY`）：
+命令行（需要 Node 24；签名私钥放在环境变量 `BACKDRAFT_KEY`）：
 
 ```bash
 cd web && pnpm install
-node scripts/afterburn.ts status
-node scripts/afterburn.ts sim  --crunch 8 --gas 300000
-node scripts/afterburn.ts send --crunch 8 --gas 300000
-node scripts/afterburn.ts send --to <合约地址> --data <calldata> --gas <上限>
+node scripts/backdraft.ts status
+node scripts/backdraft.ts sim  --crunch 8 --gas 300000
+node scripts/backdraft.ts send --crunch 8 --gas 300000
+node scripts/backdraft.ts send --to <合约地址> --data <calldata> --gas <上限>
 ```
 
 每条命令输出一个 JSON 对象，方便 Agent 解析。
 
 ## 给 Agent 用
 
-自己构造交易的脚本、机器人和 Agent 没有钱包替它们设上限，是多付 gas 最多的一类发送者。[`skills/afterburner/SKILL.md`](skills/afterburner/SKILL.md) 让编码 Agent 在 Monad 上发交易时先模拟、再决定上限，剩余部分走 Afterburner。
+自己构造交易的脚本、机器人和 Agent 没有钱包替它们设上限，是多付 gas 最多的一类发送者。[`skills/backdraft/SKILL.md`](skills/backdraft/SKILL.md) 让编码 Agent 在 Monad 上发交易时先模拟、再决定上限，剩余部分走 Backdraft。
 
 ## 参考
 

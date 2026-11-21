@@ -22,3 +22,8 @@ contracts/broadcast/*/31337/
 
 # private working notes
 notes/
+
+# local agent tooling (third-party skills, editor config)
+.agents/
+.claude/
+skills-lock.json

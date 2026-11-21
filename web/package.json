@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "afterburn": "node --env-file=.env.local scripts/afterburn.ts"
+    "backdraft": "node --env-file=.env.local scripts/backdraft.ts"
   },
   "dependencies": {
     "next": "16.4.6",

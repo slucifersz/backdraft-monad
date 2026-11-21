@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Afterburner — put paid-for gas to work on Monad",
+  title: "Backdraft 回燃 — put paid-for gas to work on Monad",
   description:
-    "On Monad you pay for your gas limit, not what you use. Afterburner spends the leftover on queued jobs and pays you back.",
+    "On Monad you pay for your gas limit, not what you use. Backdraft spends the leftover on queued jobs and pays you back.",
 };
 
 export default function RootLayout({
