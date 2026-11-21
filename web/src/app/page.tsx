@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "@/components/backdraft/backdraft.css";
 import "@/components/backdraft/sheets.css";
+import "@/components/backdraft/console.css";
 import { demoAccount, readModel, readTotals, type ModelState, type Totals } from "@/lib/chain";
 import { prefersReducedMotion, trainSteps, useBurn, type Mode } from "@/components/backdraft/burn";
+import ConsoleSheet from "@/components/backdraft/ConsoleSheet";
 import Front from "@/components/backdraft/Front";
 import Ignite, { FailSheet } from "@/components/backdraft/Ignite";
 import ModelSheet, { type BurnEvent } from "@/components/backdraft/ModelSheet";
+import Proof from "@/components/backdraft/Proof";
 import { REPLAY, type BurnResult } from "@/components/backdraft/replay";
 import { Sheet2, Sheet3, Sheet7, Sheet8, Sheet9, SheetHood } from "@/components/backdraft/Sheets";
 import StoryBar from "@/components/backdraft/StoryBar";
@@ -124,21 +127,32 @@ export default function Home() {
     const roomy = window.matchMedia("(min-width: 900px) and (min-height: 540px)").matches;
     const animate = roomy && !prefersReducedMotion();
     setAnim(animate);
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.intersectionRatio >= 0.5) {
-            e.target.classList.add("in");
-            setActive(e.target.id);
-          } else if (e.intersectionRatio <= 0.05) {
-            e.target.classList.remove("in");
-          }
+    // 用滚动位置判断（不依赖 IntersectionObserver）：占屏一半以上算翻到，几乎离开才算翻走。
+    const check = () => {
+      const vh = window.innerHeight;
+      let best = "";
+      for (const s of sheets) {
+        const r = s.getBoundingClientRect();
+        const visible = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
+        const ratio = visible / Math.min(vh, r.height || vh);
+        if (ratio >= 0.5) {
+          s.classList.add("in");
+          best = s.id;
+        } else if (ratio <= 0.05) {
+          s.classList.remove("in");
         }
-      },
-      { threshold: [0, 0.05, 0.5, 0.9] },
-    );
-    sheets.forEach((s) => io.observe(s));
-    return () => io.disconnect();
+      }
+      if (best) setActive((prev) => (prev === best ? prev : best));
+    };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    const timer = setInterval(check, 400);
+    return () => {
+      window.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+      clearInterval(timer);
+    };
   }, []);
 
   // 键盘翻版：上下方向键、PageUp/PageDown、空格。
@@ -182,8 +196,10 @@ export default function Home() {
       <Sheet7 totals={totals} />
       <SheetHood />
       <Sheet8 />
+      <ConsoleSheet active={active === "console"} lock={lock} onSent={refresh} />
       <Sheet9 totals={totals} />
       <StoryBar active={active} main={main} fail={fail} />
+      <Proof />
     </main>
   );
 }

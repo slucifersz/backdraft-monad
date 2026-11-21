@@ -3,6 +3,7 @@ import {
   createWalletClient,
   custom,
   encodeFunctionData,
+  fallback,
   http,
   parseAbi,
   parseEventLogs,
@@ -54,9 +55,18 @@ export const demoAppAbi = parseAbi([
 
 export const heartbeatAbi = parseAbi(["function beats() view returns (uint64)"]);
 
+// The public endpoint rate-limits (HTTP 429) under a burst of reads, so every
+// request falls through to two other public Monad testnet endpoints in turn.
+const RPC_URLS = [RPC_URL, "https://monad-testnet.drpc.org", "https://rpc.ankr.com/monad_testnet"];
+const transport = () =>
+  fallback(
+    RPC_URLS.map((url) => http(url, { retryCount: 1, retryDelay: 300, timeout: 10_000 })),
+    { rank: false },
+  );
+
 export const publicClient = createPublicClient({
   chain: monadTestnet,
-  transport: http(RPC_URL, { retryCount: 3, retryDelay: 400 }),
+  transport: transport(),
   pollingInterval: 400,
 });
 
@@ -66,7 +76,7 @@ export const walletClient = demoAccount
   ? createWalletClient({
       account: demoAccount,
       chain: monadTestnet,
-      transport: http(RPC_URL, { retryCount: 2, retryDelay: 400 }),
+      transport: transport(),
     })
   : undefined;
 

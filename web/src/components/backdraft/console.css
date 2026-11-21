@@ -1,0 +1,364 @@
+/* Backdraft 控制台 — same paper / ink / purple / fire system, one working screen. */
+.bdc {
+  height: 100vh;
+  min-height: 560px;
+  padding: 2.4vh 2.6vw 2.4vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6vh;
+  overflow: hidden;
+}
+.bdc .bd-mast {
+  border-top-width: 1vh;
+  padding: 1vh 0;
+}
+.bdc-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 23vw) minmax(0, 1fr) minmax(240px, 21vw);
+  gap: 1.4vw;
+}
+.bdc-panel {
+  border: 4px solid var(--ink);
+  padding: 1.4vh 1.1vw;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2vh;
+  min-height: 0;
+  overflow: auto;
+}
+.bdc-panel h2 {
+  margin: 0;
+  font-size: clamp(15px, 1.5vw, 30px);
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.bdc-panel h2 .bd-link {
+  font-size: 0.7em;
+}
+.bdc-panel h3 {
+  margin: 0.6vh 0 0;
+  border-top: 3px solid var(--ink);
+  padding-top: 0.6vh;
+  font-size: clamp(12px, 1.05vw, 21px);
+  letter-spacing: 0.15em;
+}
+
+.bdc-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 3px solid var(--ink);
+}
+.bdc-toggle button {
+  border: 0;
+  background: transparent;
+  min-height: 40px;
+  font-size: clamp(13px, 1.1vw, 22px);
+  font-weight: 600;
+  cursor: pointer;
+}
+.bdc-toggle button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.bdc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6vh;
+}
+.bdc-field > span {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: clamp(12px, 1.05vw, 21px);
+  font-weight: 600;
+}
+.bdc-field b {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(20px, 2.3vw, 46px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.bdc input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+.bdc input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px;
+  background: var(--ink);
+}
+.bdc input[type="range"]::-moz-range-track {
+  height: 10px;
+  background: var(--ink);
+}
+.bdc input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 28px;
+  margin-top: -9px;
+  background: var(--fire);
+  border: 3px solid var(--ink);
+}
+.bdc input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 22px;
+  background: var(--fire);
+  border: 3px solid var(--ink);
+  border-radius: 0;
+}
+.bdc input[type="range"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.bdc input[type="range"]:focus-visible {
+  outline: 4px solid var(--purple);
+  outline-offset: 2px;
+}
+
+.bdc-chips {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+.bdc-chips button {
+  border: 2px solid var(--ink);
+  background: transparent;
+  min-height: 32px;
+  font-size: clamp(11px, 0.9vw, 18px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  padding: 0;
+}
+.bdc-chips button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.bdc-kv {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+.bdc-kv > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6vw;
+  border-top: 1px solid var(--ink);
+  padding: 0.5vh 0;
+  font-size: clamp(12px, 1.05vw, 21px);
+}
+.bdc-kv dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+.bdc-kv .hot dd {
+  background: var(--fire);
+  padding: 0 0.4em;
+}
+
+.bdc-actions {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 0.6vw;
+}
+.bdc-actions .bd-btn {
+  min-height: 52px;
+  padding: 0.4em 0.6em;
+}
+
+.bdc-main {
+  gap: 1.3vh;
+}
+.bdc-main .bd-bar {
+  height: 11vh;
+  flex-shrink: 0;
+}
+.bdc-stats {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 1.2vw;
+}
+.bdc-stats > div {
+  border-top: 5px solid var(--ink);
+  padding-top: 0.6vh;
+  display: flex;
+  flex-direction: column;
+}
+.bdc-stats span {
+  font-size: clamp(12px, 1.05vw, 21px);
+  font-weight: 600;
+}
+.bdc-stats b {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(20px, 2.6vw, 54px);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bdc-stats b i {
+  font-style: normal;
+  background: var(--fire);
+  padding: 0 0.12em;
+}
+.bdc-stats b.fire {
+  color: var(--fire-ink);
+}
+.bdc-barhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: clamp(12px, 1.1vw, 22px);
+  font-weight: 600;
+}
+.bdc-history {
+  flex: 1;
+  min-height: 9vh;
+  overflow: auto;
+  border-top: 4px solid var(--ink);
+}
+.bdc-tr {
+  display: grid;
+  grid-template-columns: 0.9fr 1fr 0.9fr 0.9fr 0.9fr 1.1fr 1.6fr;
+  gap: 0.6vw;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  background: transparent;
+  padding: 0.5vh 0.3vw;
+  text-align: left;
+  font-size: clamp(11px, 0.95vw, 19px);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.bdc-tr.head {
+  font-family: var(--sans);
+  font-weight: 700;
+  cursor: default;
+}
+button.bdc-tr:hover,
+button.bdc-tr[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.bdc-empty {
+  margin: 0;
+  padding: 0.8vh 0.3vw;
+  font-size: clamp(12px, 1vw, 20px);
+  color: var(--mute);
+}
+
+.bdc-job {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2vh;
+  border-left: 6px solid var(--fire);
+  padding-left: 0.6vw;
+}
+.bdc-job b {
+  font-size: clamp(12px, 1.05vw, 21px);
+}
+.bdc-job span {
+  font-size: clamp(11px, 0.9vw, 18px);
+}
+.bdc-model {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6vw;
+}
+.bdc-model b {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(26px, 3.4vw, 70px);
+  line-height: 0.9;
+}
+.bdc-model span {
+  font-size: clamp(11px, 0.95vw, 19px);
+  font-weight: 600;
+}
+
+.bdc-log {
+  flex-shrink: 0;
+  height: 22vh;
+  min-height: 120px;
+  overflow: auto;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 1.2vh 1vw;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: clamp(12px, 1vw, 20px);
+  line-height: 1.55;
+}
+.bdc-log > div {
+  display: flex;
+  gap: 1vw;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.bdc-log .t {
+  color: #9a9a94;
+  flex-shrink: 0;
+}
+.bdc-log .cmd .m {
+  color: #fff;
+  font-weight: 700;
+}
+.bdc-log .ok .m {
+  color: #ffb199;
+}
+.bdc-log .err .m {
+  color: #ffd84d;
+}
+
+@media (max-width: 900px) {
+  .bdc {
+    height: auto;
+    overflow: visible;
+  }
+  .bdc-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* fit pass at 1440x810 */
+.bdc-stats b {
+  font-size: clamp(18px, 2.05vw, 44px);
+}
+.bdc-stats {
+  grid-template-columns: 1.35fr 1fr 1fr 1fr;
+  gap: 1vw;
+}
+.bdc-panel {
+  gap: 0.9vh;
+}
+.bdc-kv > div {
+  padding: 0.3vh 0;
+}
+.bdc-field b {
+  font-size: clamp(20px, 2vw, 40px);
+}
+.bdc-actions .bd-btn {
+  min-height: 46px;
+}
+
+/* as a sheet inside the main page: leave room for the story bar */
+.bd-screen.bdc {
+  padding-bottom: 4.6vh;
+  justify-content: flex-start;
+}

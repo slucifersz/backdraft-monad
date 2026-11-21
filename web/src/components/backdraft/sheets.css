@@ -882,3 +882,23 @@
 #s7 .bdx-code {
   padding: 1vh 1vw;
 }
+
+/* sheet 7 fit pass */
+#s7 .bds-headrow {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 2vw;
+}
+#s7 .bds-headrow .bds-sub {
+  margin: 0;
+}
+#s7 .bdx-code {
+  line-height: 1.42;
+}
+#s7 .bds-quote {
+  padding-top: 0.3em;
+  padding-bottom: 0.3em;
+  font-size: min(2.2vw, 4vh);
+}

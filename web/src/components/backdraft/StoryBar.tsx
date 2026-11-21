@@ -47,6 +47,8 @@ function segFor(active: string, main: Burn, fail: Burn): Seg {
       return full(["", "你的任务可以接在这一段", "", ""]);
     case "hood":
       return full(["量出来的", "拿多少，算多少", "", ""]);
+    case "console":
+      return full(["你的调用", "你点燃的", "", ""]);
     case "s8":
       return full(["", "写死的上限：这一大段已经付出去了", "", ""]);
     default:

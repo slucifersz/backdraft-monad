@@ -196,11 +196,13 @@ export default function Ignite({
           <span className="bd-note">没有检测到浏览器钱包</span>
         )}
         {walletNote && <span className="bd-notice">{walletNote}</span>}
+        <a className="bd-link" href="#console" style={{ marginLeft: "auto", textDecoration: "none" }}>
+          去控制台自己调一笔 ↓
+        </a>
         <button
           type="button"
           className="bd-link"
           aria-pressed={autoTour}
-          style={{ marginLeft: "auto" }}
           onClick={() => setAutoTour(!autoTour)}
         >
           烧完自动去看模型：{autoTour ? "开" : "关"}
