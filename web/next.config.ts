@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
+// Static export so the demo can be hosted anywhere (GitHub Pages serves it under
+// /backdraft-monad, hence the optional base path).
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 const nextConfig: NextConfig = {
+  output: "export",
+  basePath,
+  trailingSlash: true,
+  images: { unoptimized: true },
   turbopack: {
     rules: {
       "*.css": {

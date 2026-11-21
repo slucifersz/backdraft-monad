@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCountUp } from "./burn";
 
 // 估算：1,348 个塞满的区块 × 每块 1.5 亿 gas ≈ 2000 亿 gas/天 ≈ 每秒 234 万。
 const WASTED_GAS_PER_SEC = (1348 * 150_000_000) / 86_400;
@@ -31,7 +32,8 @@ function SinceOpen() {
   );
 }
 
-export default function Front() {
+export default function Front({ active }: { active: boolean }) {
+  const big = useCountUp(2000, active, 1100);
   return (
     <section className="bd-screen" id="s1" aria-label="头版">
       <header className="bd-mast">
@@ -44,7 +46,8 @@ export default function Front() {
       <div className="bd-front-main">
         <div className="bd-front-figure">
           <div className="bd-giant">
-            2000<span className="bd-giant-cn">亿</span>
+            {Math.round(big)}
+            <span className="bd-giant-cn">亿</span>
           </div>
           <div className="bd-front-unit">
             <span>gas / 每天</span>

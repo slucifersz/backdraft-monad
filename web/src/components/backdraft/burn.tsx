@@ -76,7 +76,7 @@ export function useBurn(cfg: {
   lock: RefObject<boolean>;
   mode: Mode;
   initial?: BurnResult;
-  onLive?: (r: BurnResult) => void;
+  onDone?: (r: BurnResult) => void;
 }) {
   const [phase, setPhase] = useState<Phase>(cfg.initial ? "done" : "idle");
   const [result, setResult] = useState<BurnResult | null>(cfg.initial ?? null);
@@ -115,7 +115,7 @@ export function useBurn(cfg: {
   }, []);
 
   const run = useCallback(async (kind: "normal" | "fail", replayKey: keyof typeof REPLAY, gasLimit: number) => {
-    const { lock, mode, onLive } = latest.current;
+    const { lock, mode, onDone } = latest.current;
     if (lock.current) return;
     lock.current = true;
     const reduced = prefersReducedMotion();
@@ -202,7 +202,7 @@ export function useBurn(cfg: {
     setPhase("done");
     setRound((r) => r + 1);
     lock.current = false;
-    if (res.source === "live") onLive?.(res);
+    onDone?.(res);
   }, []);
 
   return {
@@ -303,4 +303,42 @@ export function Legend({ result }: { result: BurnResult | null }) {
       </div>
     </div>
   );
+}
+
+/**
+ * 整屏一起烧：点燃时橙色一列一列从左到右烧过整个屏幕（和长条的格子同步），
+ * 烧完整屏反成橙底，一个大数字占满屏幕，停一拍再落回版面。
+ */
+export function BurnOverlay({ burn, figure, caption }: { burn: Burn; figure: string; caption: string }) {
+  const [climax, setClimax] = useState(false);
+  const seen = useRef(burn.round);
+  useEffect(() => {
+    if (burn.round === seen.current) return;
+    seen.current = burn.round;
+    if (prefersReducedMotion()) return;
+    setClimax(true);
+    const t = setTimeout(() => setClimax(false), 1800);
+    return () => clearTimeout(t);
+  }, [burn.round]);
+
+  const r = burn.result;
+  if (!r || r.jobGas <= 0) return null;
+  if (burn.phase === "burn") {
+    return (
+      <div className="bd-wall" aria-hidden="true">
+        {Array.from({ length: r.units }, (_, i) => (
+          <i key={i} className={i < burn.lit ? "lit" : ""} />
+        ))}
+      </div>
+    );
+  }
+  if (climax && burn.phase === "done") {
+    return (
+      <div className="bd-climax" aria-hidden="true">
+        <div className="bd-climax-fig">{figure}</div>
+        <div className="bd-climax-cap">{caption}</div>
+      </div>
+    );
+  }
+  return null;
 }

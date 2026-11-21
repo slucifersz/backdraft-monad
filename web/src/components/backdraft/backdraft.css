@@ -1050,3 +1050,209 @@ html:has(.bd) {
 .bd-model-key {
   bottom: 30%;
 }
+
+/* =====================================================================
+   Macro motion: full-screen burn, sheet entrances, the story bar
+   ===================================================================== */
+.bd-wall {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+.bd-wall i {
+  flex: 1;
+  transform-origin: center bottom;
+}
+.bd-wall i.lit {
+  background: var(--fire);
+  animation: bd-rise 0.3s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+@keyframes bd-rise {
+  from {
+    transform: scaleY(0);
+    background: var(--hot);
+  }
+  to {
+    transform: scaleY(1);
+    background: var(--fire);
+  }
+}
+.bd-climax {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: var(--fire);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: bd-climax 1.8s ease both;
+}
+@keyframes bd-climax {
+  0%,
+  76% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.bd-climax-fig {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: min(34vw, 60vh);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+  animation: bd-slam 0.45s cubic-bezier(0.2, 1.5, 0.3, 1) both;
+}
+.bd-climax-cap {
+  margin-top: 2.4vh;
+  font-size: min(3.2vw, 5.6vh);
+  font-weight: 600;
+}
+
+/* sheet entrances: only when .anim is set by the page (roomy screen, motion allowed) */
+.bd.anim
+  .bd-screen:not(.in)
+  :is(
+    .bd-giant,
+    .bd-headline,
+    .bds-h,
+    .bdx-banner,
+    .bd-quote,
+    .bds-quote,
+    .bd-split,
+    .bdx-map,
+    .bd-block,
+    .bds-end-fire,
+    .bd-model-steps,
+    .bds-big,
+    .bdx-step,
+    .bdx-way,
+    .bdx-card,
+    .bds-vs-col,
+    .bds-exp-nums > *,
+    .bds-table .bds-tr,
+    .bd-col,
+    .bds-next > *,
+    .bds-job,
+    .bd-front-side > *,
+    .bd-facts > div,
+    .bd-model-plot
+  ) {
+  opacity: 0;
+}
+.bd.anim .bd-screen.in :is(.bd-headline, .bds-h) {
+  animation: bd-wipe 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.bd.anim .bd-screen.in :is(.bdx-banner, .bd-quote, .bds-quote, .bd-split, .bdx-map) {
+  animation: bd-wipe 0.8s 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.bd.anim .bd-screen.in :is(.bd-giant, .bd-model-steps, .bds-big, .bd-block, .bds-end-fire) {
+  animation: bd-slam 0.5s 0.1s cubic-bezier(0.2, 1.5, 0.3, 1) both;
+}
+.bd.anim
+  .bd-screen.in
+  :is(
+    .bdx-step,
+    .bdx-way,
+    .bdx-card,
+    .bds-vs-col,
+    .bds-exp-nums > *,
+    .bds-table .bds-tr,
+    .bd-col,
+    .bds-next > *,
+    .bds-job,
+    .bd-front-side > *,
+    .bd-facts > div,
+    .bd-model-plot
+  ) {
+  animation: bd-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(0.2s + var(--k, 0) * 0.12s);
+}
+.bd-screen :nth-child(1) {
+  --k: 0;
+}
+.bd-screen :nth-child(2) {
+  --k: 1;
+}
+.bd-screen :nth-child(3) {
+  --k: 2;
+}
+.bd-screen :nth-child(4) {
+  --k: 3;
+}
+.bd-screen :nth-child(5) {
+  --k: 4;
+}
+.bd-screen :nth-child(6) {
+  --k: 5;
+}
+@keyframes bd-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes bd-up {
+  from {
+    opacity: 0;
+    transform: translateY(5vh);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.bd-front-figure .bd-giant {
+  min-width: 3.3em;
+}
+
+/* the one bar that runs through the whole page */
+.bd-story {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3vh;
+  min-height: 18px;
+  z-index: 30;
+  display: flex;
+  border-top: 3px solid var(--ink);
+  background: var(--paper);
+}
+.bd-story > div {
+  flex-basis: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: flex-grow 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+  font-size: clamp(10px, 1.6vh, 18px);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.bd-story .call {
+  background: var(--purple);
+  color: #fff;
+}
+.bd-story .fire {
+  background: var(--fire);
+}
+.bd-story .hatch span {
+  background: var(--paper);
+  padding: 0 0.6em;
+}
+.bd-story .over {
+  background: var(--grey);
+}

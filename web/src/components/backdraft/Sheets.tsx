@@ -255,9 +255,10 @@ const WAY_JOB = `contract MyJob is IAfterburnerJob {
         // 拿到多少 gas，就做多少事
     }
 }`;
-const WAY_APP = `function swap(...) external {
-    // ……你自己的逻辑……
-    backdraft.burn(payable(msg.sender));
+const WAY_APP = `contract MyApp is BackdraftHook {
+    function swap(...) external recycle {
+        // ……你自己的逻辑……
+    }
 }`;
 const MCP_TOOLS: [string, string][] = [
   ["backdraft_status", "查队列和累计数据"],
@@ -288,13 +289,14 @@ export function Sheet7({ totals }: { totals: Totals | null }) {
           </p>
         </div>
         <div className="bdx-way purple">
-          <h3>你的用户有剩余 —— 加一行</h3>
+          <h3>你的用户有剩余 —— 加一个词</h3>
           <pre className="bdx-code">
             <code>{WAY_APP}</code>
           </pre>
           <p>
-            <b>你得到：</b>给用户返手续费，或者把赏金收进自己的金库。
+            <b>你得到：</b>给用户返手续费，或者把赏金收进自己的金库。调用者不变，出错不影响你的函数。
           </p>
+          <p className="bds-small">实测 · 上限 500,000 → 回收 300,493 gas，赚回 28.6%</p>
         </div>
         <div className="bdx-way fire">
           <h3>
@@ -615,7 +617,7 @@ export function Sheet9({ totals }: { totals: Totals | null }) {
             ))}
           </ul>
           <p className="bds-small">
-            7 项合约测试全部通过 · Monad Testnet · chainId 10143 · 源码{" "}
+            10 项合约测试全部通过 · Monad Testnet · chainId 10143 · 源码{" "}
             <a href={GITHUB_URL} target="_blank" rel="noreferrer">
               github.com/slucifersz/backdraft-monad ↗
             </a>

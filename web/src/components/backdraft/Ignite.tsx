@@ -13,7 +13,7 @@ import {
   simulateExec,
   switchToDemoAccount,
 } from "@/lib/chain";
-import { GasBar, Legend, mon, pct, trainSteps, useCountUp, type Burn, type Mode, type Prediction } from "./burn";
+import { BurnOverlay, GasBar, Legend, mon, pct, trainSteps, useCountUp, type Burn, type Mode, type Prediction } from "./burn";
 import { REPLAY, shortAddr, shortHash, type OptionKey } from "./replay";
 
 const OPTIONS: { key: OptionKey; name: string; gasLimit: number }[] = [
@@ -45,11 +45,15 @@ export default function Ignite({
   mode,
   setMode,
   onFail,
+  autoTour,
+  setAutoTour,
 }: {
   burn: Burn;
   mode: Mode;
   setMode: (m: Mode) => void;
   onFail: () => void;
+  autoTour: boolean;
+  setAutoTour: (v: boolean) => void;
 }) {
   const [opt, setOpt] = useState<OptionKey>("h500");
   const [pred, setPred] = useState<Prediction | null>(null);
@@ -156,7 +160,11 @@ export default function Ignite({
 
   return (
     <section className="bd-screen" id="s4" aria-label="点火">
-      {phase === "done" && burned && <div key={burn.round} className="bd-flash" aria-hidden="true" />}
+      <BurnOverlay
+        burn={burn}
+        figure={util ? pct(util.after) : ""}
+        caption={util ? `这笔交易预留的算力，从 ${pct(util.before)} 用到了 ${pct(util.after)}` : ""}
+      />
 
       <header className="bd-mast">
         <div className="bd-brand">
@@ -188,7 +196,16 @@ export default function Ignite({
           <span className="bd-note">没有检测到浏览器钱包</span>
         )}
         {walletNote && <span className="bd-notice">{walletNote}</span>}
-        <span className="bd-toggle" role="group" aria-label="数据来源" style={{ marginLeft: "auto" }}>
+        <button
+          type="button"
+          className="bd-link"
+          aria-pressed={autoTour}
+          style={{ marginLeft: "auto" }}
+          onClick={() => setAutoTour(!autoTour)}
+        >
+          烧完自动去看模型：{autoTour ? "开" : "关"}
+        </button>
+        <span className="bd-toggle" role="group" aria-label="数据来源">
           <button
             type="button"
             aria-pressed={mode === "live"}
@@ -343,7 +360,7 @@ export function FailSheet({ burn, mode }: { burn: Burn; mode: Mode }) {
 
   return (
     <section className="bd-screen" id="s6" aria-label="失败也是燃料">
-      {phase === "done" && burn.round > 0 && <div key={burn.round} className="bd-flash" aria-hidden="true" />}
+      <BurnOverlay burn={burn} figure={`${earned.toFixed(1)}%`} caption="失败的交易，赚回的手续费" />
 
       <header className="bd-mast">
         <div className="bd-brand">
