@@ -40,6 +40,11 @@ interface IGasUsageRegistry {
     /// 直接发送这笔调用时建议设置的交易 gas 上限（含 21,000 基础费用与 calldata 费用）；从未测量过则返回 0
     function suggestTxGasLimit(address target, bytes calldata data) external view returns (uint256 gasLimit);
 
+    /// 同上，并返回建议值的依据。exact 为 true 表示来自这笔完全相同的调用（target + data）的记录，
+    /// 为 false 表示退回到该函数（target + selector）的历史最大用量
+    function suggestFor(address target, bytes calldata data)
+        external view returns (uint256 gasLimit, uint256 maxUsed, uint256 samples, bool exact);
+
     /// 每写入一次测量时发出
     event Recorded(address indexed target, bytes4 indexed selector, uint256 gasUsed, uint256 maxGas, uint256 samples);
 }
@@ -54,12 +59,12 @@ interface IGasUsageRegistry {
 ## 参考实现的要点
 
 - 写入测量值所需的 gas 取自这笔交易自身的剩余 gas。这部分 gas 已经按上限付费、即将作废，所以登记表的更新没有额外的手续费成本，也不需要任何一方出资维护。
-- 写入只修改登记表自己的一个存储槽，不调用其他合约，不改变调用方或目标合约的任何状态。
+- 写入只修改登记表自己的两个存储槽（函数一份，完整调用一份），不调用其他合约，不改变调用方或目标合约的任何状态。
 - 剩余 gas 不足以完成写入时直接跳过，不影响原调用。
 
 ## 已知局限
 
-- **用量随输入变化的函数。** 单一的历史最大值在输入变大时会偏低。参考实现的做法是：调用方在使用建议值之前先做一次 `eth_estimateGas`，建议值低于估算值时不采用；并提供一个在链上拟合的线性模型来预测随输入规模变化的用量。更一般的方案（按 calldata 长度分桶等）留待讨论。
+- **用量随输入变化的函数。** 同一个函数的历史最大值会被输入更大的调用抬高，对输入小的调用偏高；输入比历史更大时又会偏低。参考实现的做法是：除了按“合约 + 函数”记录，再按完整的调用数据（`keccak256(target, data)`）各记一份，建议值优先取精确匹配的记录；调用方在使用建议值之前先做一次 `eth_estimateGas`，建议值低于估算值时不采用。精确匹配只对重复出现的调用有效，更一般的方案（按 calldata 长度分桶等）留待讨论。
 - **测量路径。** 参考实现通过包装入口测量，目标合约看到的调用者是登记表合约，依赖调用者身份的调用无法通过这条路径测量。可由应用自行在函数内上报，或由智能账户（ERC-4337 / EIP-7702）在执行模块中测量。
 - **状态冲突。** 对同一“合约 + 函数”的并发写入会读写同一个存储槽，在并行执行下产生冲突。这类交易通常本来就访问同一个目标合约。
 - **数据可信度。** 测量值来自链上执行，无法伪造数值本身；但任何人都可以用非典型的输入触发测量。是否需要区分数据来源，留待讨论。

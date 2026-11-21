@@ -220,7 +220,7 @@ export function Sheet3() {
         </p>
         <p className="bds-body">
           <b>只做一件小事。</b>
-          记一次只要一两万 gas。它不调用别的合约，不破坏交易的整体性。
+          记一次只要几万 gas。它不调用别的合约，不破坏交易的整体性。
         </p>
       </div>
     </section>
@@ -342,7 +342,7 @@ export function Sheet6() {
         <a href={`${EXPLORER}/address/${ADDR.afterburner}`} target="_blank" rel="noreferrer">
           {ADDR.afterburner}
         </a>
-        <span>（源码已验证）· 13 项测试 ·</span>
+        <span>（源码已验证）· 14 项测试 ·</span>
         <a href={GITHUB_URL} target="_blank" rel="noreferrer">
           github.com/slucifersz/backdraft-monad ↗
         </a>

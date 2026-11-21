@@ -18,9 +18,9 @@ Category Labs 的研究指出，按“合约 + 函数”的历史用量来设上
 
 ### 它为什么不破坏交易的整体性
 
-- **不运行任何外部代码。** 记录用量只写 Backdraft 自己的一个存储槽，不调用别的合约，改不了任何人的状态。
-- **队列里的任务是收紧过的。** 只有合约所有者能登记，且只收自成一体的任务（只写自己的存储）。目前有两个：一个在链上拟合回归线，用来预测用量随输入规模变化的函数；一个是心跳。
-- **只需要很少的 gas。** 写一次记录约一两万 gas，不需要很多剩余。
+- **不运行任何外部代码。** 记录用量只写 Backdraft 自己的存储，不调用别的合约，改不了任何人的状态。
+- **不开放任务队列。** 当前部署的合约上没有登记任何任务。队列的代码还留在合约里（只有合约所有者能登记），不属于现在的功能。
+- **只需要很少的 gas。** 写一次记录只要几万 gas，剩余不够时直接跳过。
 - **它会把自己用没。** 记得越准，下一笔留下的剩余就越少。
 
 ### 读取方式
@@ -33,7 +33,7 @@ Category Labs 的研究指出，按“合约 + 函数”的历史用量来设上
 uint256 gasLimit = backdraft.suggestTxGasLimit(target, data);
 ```
 
-对于用量随输入规模变化的函数，单个数字不够，`GasModel` 用剩余的 gas 在链上拟合一条直线 `gas ≈ w·n + b`（两个参数），191 步后预测误差 0.14%。
+同一个函数输入不同，用量也不同。所以登记表另外按“完整的调用数据”各记一份：`suggestTxGasLimit` 优先用这笔完全相同的调用的记录，没有时才退回到这个函数的历史最大值。`suggestFor(target, data)` 会多返回依据：最大用量、测量次数、是否精确匹配。
 
 这份登记表的接口已经整理成一份 MRC 草案：[docs/MRC-draft-gas-usage-registry.md](docs/MRC-draft-gas-usage-registry.md)。
 
@@ -132,14 +132,14 @@ contract MyApp is BackdraftHook {
 | 合约 | 地址 |
 | --- | --- |
 | Afterburner（队列与包装入口；合约沿用项目最初的名字） | [`0xc7c9aA27aBD518AE4E321A91F33d2CB8e4338AbB`](https://testnet.monadscan.com/address/0xc7c9aA27aBD518AE4E321A91F33d2CB8e4338AbB) |
-| GasModel（链上训练的模型） | [`0x54e95229e1259D1A16E9f242f9816413bF9634b1`](https://testnet.monadscan.com/address/0x54e95229e1259D1A16E9f242f9816413bF9634b1) |
+| GasModel（早期版本用的回归线合约，现在的页面和接口不再用它） | [`0x54e95229e1259D1A16E9f242f9816413bF9634b1`](https://testnet.monadscan.com/address/0x54e95229e1259D1A16E9f242f9816413bF9634b1) |
 | DemoApp（代表一个普通应用） | [`0x9097f732659811c4119a28B887ED8f829E11a7A5`](https://testnet.monadscan.com/address/0x9097f732659811c4119a28B887ED8f829E11a7A5) |
 | HookedApp（用 `recycle` 修饰符接入的示例应用） | [`0x501ee51685e01521776EF1639dB573A9b9969078`](https://testnet.monadscan.com/address/0x501ee51685e01521776EF1639dB573A9b9969078) |
 | Heartbeat（最简单的任务） | [`0xc02fd9FC8aE928555f8F0672709D24EAa8fe3251`](https://testnet.monadscan.com/address/0xc02fd9FC8aE928555f8F0672709D24EAa8fe3251) |
 
 ## 安全性
 
-测试覆盖了以下情况（`contracts/test/Afterburner.t.sol`，13 项全部通过）：
+测试覆盖了以下情况（`contracts/test/Afterburner.t.sol`，14 项全部通过）：
 
 - 任务把给它的 gas 全部耗尽、返回超大数据、或者试图重入队列，都不会让发送者自己的调用失败。
 - 发送者的调用失败时，交易不回滚，剩余的 gas 仍然被回收。
