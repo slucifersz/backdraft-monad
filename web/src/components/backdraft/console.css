@@ -362,3 +362,36 @@ button.bdc-tr[aria-pressed="true"] {
   padding-bottom: 4.6vh;
   justify-content: flex-start;
 }
+
+
+/* 链上预言机：建议上限 + 按建议直接发 */
+.bdc-oracle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 2px solid var(--ink, #0a0a0a);
+}
+.bdc-oracle-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.bdc-oracle .bd-btn {
+  flex: none;
+  white-space: nowrap;
+}
+.bdc-tight-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.bdc-tight-note b {
+  background: var(--fire, #ff4311);
+  color: #000;
+  padding: 0 4px;
+}

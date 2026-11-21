@@ -13,7 +13,9 @@ import {
   hasInjectedWallet,
   publicClient,
   readModel,
+  readSuggestion,
   readTotals,
+  sendDirect,
   sendExec,
   simulateExec,
   switchToDemoAccount,
@@ -22,6 +24,7 @@ import {
   type CallKind,
   type Fees,
   type ModelState,
+  type Suggestion,
   type Totals,
 } from "@/lib/chain";
 import { GasBar, Legend, mon, pct, prefersReducedMotion, sleep, trainSteps } from "@/components/backdraft/burn";
@@ -73,6 +76,10 @@ export default function ConsoleSheet({
   const [model, setModel] = useState<ModelState | null>(null);
   const [balance, setBalance] = useState<bigint | null>(null);
   const [block, setBlock] = useState<{ number: bigint; gwei: number } | null>(null);
+  const [sug, setSug] = useState<Suggestion | null>(null);
+  const [tight, setTight] = useState<{ hash: string; limit: number; feeMon: number; looseMon: number; looseLimit: number } | null>(
+    null,
+  );
   const [addr, setAddr] = useState<`0x${string}`>(DEMO_ADDRESS);
   const [own, setOwn] = useState(false);
   const [hasWallet, setHasWallet] = useState(false);
@@ -127,6 +134,19 @@ export default function ConsoleSheet({
     },
     [log],
   );
+
+  // 预言机：这类调用在链上记下的真实用量，和它给出的建议上限。
+  const refreshSug = useCallback(async (c: CallKind) => {
+    try {
+      setSug(await readSuggestion(c));
+    } catch {
+      /* RPC 没响应时保留上一次读到的值 */
+    }
+  }, []);
+  useEffect(() => {
+    if (!active) return;
+    refreshSug(failing ? { kind: "soldOut" } : { kind: "crunch", n: 8 });
+  }, [active, failing, refreshSug]);
 
   const started = useRef(false);
   useEffect(() => {
@@ -256,6 +276,12 @@ export default function ConsoleSheet({
           `JobRan  #${j.id} gasUsed=${fmtGas(j.gasUsed)} units=${j.units} bounty=${mon(Number(j.bounty) / 1e18)}`,
         );
       log("out", `回执 gasUsed=${fmtGas(tx.receiptGasUsed)} · 利用率 ${pct(u.before)} → ${pct(u.after)}`);
+      if (tx.recorded)
+        log(
+          "ok",
+          `Recorded  预言机记下这类调用的真实用量 ${fmtGas(tx.recorded.gasUsed)} gas · 第 ${tx.recorded.samples} 次测量`,
+        );
+      refreshSug(c);
 
       if (res.units > 0 && !prefersReducedMotion()) {
         const stepMs = Math.min(110, Math.max(45, 1800 / res.units));
@@ -276,6 +302,48 @@ export default function ConsoleSheet({
       onSent(res);
     } catch (e) {
       setSendingFor(0);
+      const msg = e instanceof Error ? e.message.split("\n")[0] : "未知错误";
+      log("err", `没有发出：${msg}`);
+    } finally {
+      setBusy(false);
+      lock.current = false;
+    }
+  };
+
+  // 问预言机要一个上限，然后不经过 Backdraft，直接把这笔调用发给应用。
+  const sendTight = async () => {
+    if (busy || lock.current || !sug || sug.gasLimit === 0) return;
+    const who = activeAddress();
+    if (!who) {
+      log("err", "没有可用的账户：请连接浏览器钱包。");
+      return;
+    }
+    setBusy(true);
+    lock.current = true;
+    const c = call;
+    const limit = sug.gasLimit;
+    const looseLimit = gasLimit;
+    log("cmd", `oracle.suggestTxGasLimit ${callLabel(c)}`);
+    log("out", `链上记录 ${sug.samples} 次 · 最大真实用量 ${fmtGas(sug.maxUsed)} · 建议上限 ${fmtGas(limit)}`);
+    try {
+      const [f, need] = await Promise.all([getFees(), estimateDirect(c, who)]);
+      if (need === null) throw new Error("这笔调用会失败，预言机不给失败的调用出建议");
+      if (need > limit)
+        throw new Error(`链上记录来自更小的输入，这一笔需要 ${fmtGas(need)}。先用“发送”走一遍，让预言机记下来`);
+      log("cmd", `send ${callLabel(c)} gas=${fmtGas(limit)}  直接发给应用，不经过 Backdraft`);
+      const tx = await sendDirect(c, limit, f);
+      if (tx.status !== "success") throw new Error("交易被回滚");
+      const feeMon = Number(tx.fee) / 1e18;
+      const looseMon = (looseLimit * Number(tx.gasPrice)) / 1e18;
+      setTight({ hash: tx.hash, limit, feeMon, looseMon, looseLimit });
+      log("ok", `已上链 ${tx.hash}`);
+      log(
+        "ok",
+        `手续费 ${mon(feeMon)} MON · 同一笔调用按上限 ${fmtGas(looseLimit)} 要 ${mon(looseMon)} MON · 省了 ${pct(1 - feeMon / looseMon)}`,
+      );
+      await sleep(1400);
+      status(false, who);
+    } catch (e) {
       const msg = e instanceof Error ? e.message.split("\n")[0] : "未知错误";
       log("err", `没有发出：${msg}`);
     } finally {
@@ -405,6 +473,10 @@ export default function ConsoleSheet({
               <dt>能训练</dt>
               <dd>{sim ? `${trainSteps(sim.units)} 步` : "…"}</dd>
             </div>
+            <div className="hot">
+              <dt>链上建议上限</dt>
+              <dd>{sug ? (sug.gasLimit > 0 ? fmtGas(sug.gasLimit) : "还没记录") : "…"}</dd>
+            </div>
           </dl>
 
           <div className="bdc-actions">
@@ -469,6 +541,36 @@ export default function ConsoleSheet({
           </div>
           <GasBar result={result} lit={lit} limit={gasLimit} sending={busy && !result} pred={sim} />
           <Legend result={result} />
+
+          <div className="bdc-oracle">
+            <div className="bdc-oracle-text">
+              <span className="bd-tag">实测</span>
+              <span>
+                <b>链上预言机</b>
+                {sug && sug.gasLimit > 0
+                  ? ` 记了 ${sug.samples} 次 · 这类调用最多用过 ${fmtGas(sug.maxUsed)} gas · 建议上限 ${fmtGas(sug.gasLimit)}`
+                  : " 还没有这类调用的记录。先点“发送”走一遍。"}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="bd-btn"
+              disabled={busy || !canSend || !sug || sug.gasLimit === 0}
+              onClick={sendTight}
+              title="读链上预言机给出的上限，直接把这笔调用发给应用"
+            >
+              按链上建议直接发
+            </button>
+          </div>
+          {tight && (
+            <p className="bdc-tight-note">
+              按建议上限 {fmtGas(tight.limit)} 直接发出：手续费 {mon(tight.feeMon)} MON，比上限 {fmtGas(tight.looseLimit)}{" "}
+              省了 <b>{pct(1 - tight.feeMon / tight.looseMon)}</b> ·{" "}
+              <a href={`${EXPLORER}/tx/${tight.hash}`} target="_blank" rel="noreferrer">
+                交易 {shortHash(tight.hash)} ↗
+              </a>
+            </p>
+          )}
 
           <div className="bdc-history">
             <div className="bdc-tr head">

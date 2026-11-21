@@ -37,7 +37,7 @@
     "tx": "0xcd392b4025006c6a1f99f9d7198304ba48d4ad179d751c715183fd895cd08249",
     "chainId": 10143,
     "deployedAt": "2026-11-21T06:11:00Z",
-    "current": true
+    "current": false
   },
   {
     "name": "GasModel",
@@ -61,6 +61,14 @@
     "tx": "0xec406f4e73b742e9b89a146998e500c2ae06fca72e9b1a69c36794834e20b9ac",
     "chainId": 10143,
     "deployedAt": "2026-11-21T08:31:53Z",
+    "current": true
+  },
+  {
+    "name": "Afterburner",
+    "address": "0xb22CA6B2090367F2487Caf0133Be3B2b18E7f607",
+    "tx": "0x9ed85da808443414f43e3fd264971971e34db340416f9d3f11b1abd65d1ca5eb",
+    "chainId": 10143,
+    "deployedAt": "2026-11-21T10:13:02Z",
     "current": true
   }
 ]

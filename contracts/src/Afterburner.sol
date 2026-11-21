@@ -43,6 +43,29 @@ contract Afterburner {
     /// @dev Cold account access for the job contract is charged on top of the forwarded gas.
     uint256 internal constant CALL_OVERHEAD = 12_000;
 
+    /// @notice Real gas usage of one function of one contract, measured on-chain.
+    /// Packed into a single storage slot.
+    struct Stat {
+        uint64 last; // most recent measurement
+        uint64 max; // largest measurement so far
+        uint64 avg; // exponential moving average (1/8 weight on the newest)
+        uint32 count; // number of measurements
+        uint32 updatedAt; // block timestamp of the last one
+    }
+
+    /// @dev Suggested limits carry the 7.5% buffer Category Labs measured for Monad.
+    uint256 public constant SUGGEST_BUFFER_BPS = 10_750;
+    /// @dev Gas needed to write one measurement; skipped when less is left.
+    uint256 internal constant RECORD_GAS = 45_000;
+
+    /// @notice The gas oracle: target contract => function selector => measured usage.
+    mapping(address => mapping(bytes4 => Stat)) public stats;
+
+    /// @notice Jobs are curated. Only self-contained jobs that touch nothing but
+    /// their own storage are admitted, so nothing a job does can alter the state
+    /// the sender's own call depends on.
+    address public immutable owner;
+
     Job[] public jobs;
     mapping(uint256 => string) public labelOf;
     mapping(address => uint256) public claimable;
@@ -55,6 +78,8 @@ contract Afterburner {
 
     uint256 private _lock = 1;
 
+    /// @notice One measurement written to the oracle.
+    event Recorded(address indexed target, bytes4 indexed selector, uint256 gasUsed, uint256 maxGas, uint256 samples);
     event JobPosted(uint256 indexed id, address indexed target, address indexed poster, uint256 bountyPerGas, uint256 escrow, string label);
     event JobToppedUp(uint256 indexed id, uint256 amount);
     event JobClosed(uint256 indexed id, uint256 refunded);
@@ -76,9 +101,14 @@ contract Afterburner {
         uint256 gasLeft
     );
 
+    error NotOwner();
     error Reentrancy();
     error NotPoster();
     error BadJob();
+
+    constructor() {
+        owner = msg.sender;
+    }
 
     modifier lock() {
         if (_lock != 1) revert Reentrancy();
@@ -94,6 +124,7 @@ contract Afterburner {
         payable
         returns (uint256 id)
     {
+        if (msg.sender != owner) revert NotOwner();
         if (target == address(0) || target == address(this) || bountyPerGas == 0 || msg.value == 0) revert BadJob();
         id = jobs.length;
         jobs.push(
@@ -160,6 +191,9 @@ contract Afterburner {
         mainGas = g - gasleft();
         if (!mainOk && msg.value != 0) _pay(payable(msg.sender), msg.value);
 
+        // First use of the leftover: write what this call really used to the oracle.
+        if (mainOk && gasleft() > RECORD_GAS) _record(target, data.length >= 4 ? bytes4(data[:4]) : bytes4(0), mainGas);
+
         (jobGas, units, bounty) = _burn(payable(msg.sender));
         emit Burned(msg.sender, target, mainOk, mainGas, jobGas, units, bounty, gasleft());
     }
@@ -168,6 +202,44 @@ contract Afterburner {
     function burn(address payable beneficiary) external lock returns (uint256 jobGas, uint256 units, uint256 bounty) {
         (jobGas, units, bounty) = _burn(beneficiary);
         emit Burned(beneficiary, msg.sender, true, 0, jobGas, units, bounty, gasleft());
+    }
+
+    // ------------------------------------------------------------- the oracle
+
+    /// @notice Gas to forward to `target` for `selector`: the largest usage seen
+    /// so far plus a 7.5% buffer. Zero if this function was never measured.
+    function suggest(address target, bytes4 selector) public view returns (uint256 callGas, uint256 samples) {
+        Stat storage st = stats[target][selector];
+        samples = st.count;
+        callGas = (uint256(st.max) * SUGGEST_BUFFER_BPS) / 10_000;
+    }
+
+    /// @notice Gas limit to set on a transaction that calls `target` with `data`
+    /// directly: the 21,000 base cost, the calldata cost, and the suggested call
+    /// gas. Zero if this function was never measured.
+    function suggestTxGasLimit(address target, bytes calldata data) external view returns (uint256 gasLimit) {
+        (uint256 callGas, uint256 samples) =
+            suggest(target, data.length >= 4 ? bytes4(data[:4]) : bytes4(0));
+        if (samples == 0) return 0;
+        uint256 dataGas;
+        for (uint256 i; i < data.length; ++i) {
+            dataGas += data[i] == 0 ? 4 : 16;
+        }
+        gasLimit = 21_000 + dataGas + callGas;
+    }
+
+    function _record(address target, bytes4 selector, uint256 used) internal {
+        Stat storage st = stats[target][selector];
+        uint64 u = uint64(used);
+        uint64 max = st.max;
+        uint32 count = st.count;
+        if (u > max) max = u;
+        st.last = u;
+        st.max = max;
+        st.avg = count == 0 ? u : uint64((uint256(st.avg) * 7 + u) / 8);
+        st.count = count + 1;
+        st.updatedAt = uint32(block.timestamp);
+        emit Recorded(target, selector, used, max, uint256(count) + 1);
     }
 
     function claim() external lock {

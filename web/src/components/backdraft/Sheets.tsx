@@ -38,7 +38,7 @@ export function Sheet2() {
       <h2 className="bds-h">
         别的链把没用完的 gas 退给你。
         <br />
-        <span className="bd-purple">Monad</span> 把它留了下来。
+        <span className="bd-purple">Monad</span> 不退，回执里也查不到用了多少。
       </h2>
 
       <div className="bds-vs">
@@ -70,7 +70,7 @@ export function Sheet2() {
         </div>
       </div>
 
-      <p className="bds-quote">这是 Monad 的异步执行留给开发者的一座矿。到今天还没人开采。</p>
+      <p className="bds-quote">Monad 的回执里缺一个数字：这笔交易到底用了多少 gas。我们让它上了链。</p>
 
       <div className="bds-exp">
         <div className="bds-exp-main">
@@ -196,8 +196,8 @@ export function Sheet3() {
           别的链上没有“已经付过钱的剩余”。
         </p>
         <p className="bds-body">
-          <b>对发交易的人，不要钱。</b>
-          这些 gas 已经付过了，烧不烧都是这个价。
+          <b>一分钱不用多花。</b>
+          记这个数用的 gas 已经付过了，不记也是这个价。
         </p>
         <p className="bds-body">
           <b>不鼓励多留。</b>
@@ -250,11 +250,9 @@ function JobCard({ job }: { job: Job }) {
 // 第三栏右上角的状态标签：要改就改这一处。
 const AGENT_MCP_STATUS = "实测";
 
-const WAY_JOB = `contract MyJob is IAfterburnerJob {
-    function work() external returns (uint256 units) {
-        // 拿到多少 gas，就做多少事
-    }
-}`;
+const WAY_JOB = `// 这个函数实际用多少 gas？问链。
+uint256 gasLimit =
+    backdraft.suggestTxGasLimit(target, data);`;
 const WAY_APP = `contract MyApp is BackdraftHook {
     function swap(...) external recycle {
         // ……你自己的逻辑……
@@ -270,31 +268,31 @@ export function Sheet7({ totals }: { totals: Totals | null }) {
   return (
     <section className="bd-screen" id="s7" aria-label="开放入口">
       <Mast name="开放入口">
-        <span>接口 IAfterburnerJob · 任务板读链上实时数据</span>
+        <span>suggestTxGasLimit(target, data) · 任务板读链上实时数据</span>
       </Mast>
 
       <div className="bds-headrow">
-        <h2 className="bds-h">一个函数，接上这台计算机。</h2>
+        <h2 className="bds-h">设 gas 上限不用猜，问链。</h2>
         <p className="bds-sub">三种接法，对应三种角色。</p>
       </div>
 
       <div className="bdx-ways">
         <div className="bdx-way">
-          <h3>你需要算力 —— 挂一个任务</h3>
+          <h3>你要设上限 —— 读一次链</h3>
           <pre className="bdx-code">
             <code>{WAY_JOB}</code>
           </pre>
           <p>
-            <b>你得到：</b>比自己发交易更便宜的链上执行。
+            <b>你得到：</b>这个合约的这个函数，链上实测用量加 7.5% 余量。钱包、脚本、合约都能读。
           </p>
         </div>
         <div className="bdx-way purple">
-          <h3>你的用户有剩余 —— 加一个词</h3>
+          <h3>你的应用想出一份力 —— 加一个词</h3>
           <pre className="bdx-code">
             <code>{WAY_APP}</code>
           </pre>
           <p>
-            <b>你得到：</b>给用户返手续费，或者把赏金收进自己的金库。调用者不变，出错不影响你的函数。
+            <b>你得到：</b>用户交易里剩下的 gas 顺手完成预言机的维护任务。调用者不变，出错不影响你的函数。
           </p>
           <p className="bds-small">实测 · 上限 500,000 → 回收 300,493 gas，赚回 28.6%</p>
         </div>
@@ -354,16 +352,16 @@ export function Sheet7({ totals }: { totals: Totals | null }) {
       <div className="bds-more">
         <div className="bds-more-list">
           <b>还能接什么</b>
-          <span className="first">更大的链上模型训练与批量推理</span>
+          <span className="first">按合约和函数记录真实 gas 用量（已内置）</span>
           <span>金库复利结算</span>
           <span>批量发放奖励</span>
           <span>链上游戏的世界推进</span>
           <span>过期数据清理</span>
         </div>
-        <p className="bds-small">目前挂任务要直接调合约，还没有界面；任务按先后顺序执行。</p>
+        <p className="bds-small">任务只收自成一体的：只写自己的存储，不调用别的合约，所以改不了任何人的状态。目前由合约所有者登记。</p>
       </div>
 
-      <p className="bds-quote fire">今天接进来的是一个模型。明天可以是你的。</p>
+      <p className="bds-quote fire">从此设 gas 上限不用猜，问链就行。</p>
     </section>
   );
 }
@@ -629,14 +627,14 @@ export function Sheet9({ totals }: { totals: Totals | null }) {
           <ul className="bds-next">
             <li>
               <span className="bd-tag">规划</span>
-              <b>更大的链上模型</b>
-              <p>把多层网络的训练拆成一步一步，挂进队列，让全网的剩余 gas 来算。</p>
+              <b>接进钱包和 SDK</b>
+              <p>发交易前读一次预言机，自动用建议的上限。官方研究的结论是，这样能把多付的 gas 从三成降到一成多。</p>
             </li>
             <li>
               <Tag>已完成</Tag>
-              <b>Agent 的尾气，训练链上的 AI</b>
+              <b>给 Agent 用：问链，再发交易</b>
               <p>
-                Agent 自己构造交易，没有钱包替它设上限，剩得最多。仓库里的 skill 让它们发交易时顺手回燃。
+                Agent 自己构造交易，没有钱包替它设上限。仓库里的 MCP 和 skill 让它发交易前先问预言机。
               </p>
             </li>
             <li>

@@ -1,14 +1,41 @@
 # Backdraft 回燃
 
-**没烧完的 gas，回头再烧一次。**
+**一个不用喂钱的链上 Gas 预言机。**
 
-别的链把没用完的 gas 退给你，Monad 把它留了下来。按 Category Labs 公布的数据推算，Monad 主网上每天约有 2000 亿 gas 的算力已经有人付了钱、占好了位置，却什么都没算。Backdraft 是这批算力的开放入口：让交易里没用完的 gas 在作废之前执行链上任务，并把赏金还给发送者。
+Monad 的回执里缺一个数字：一笔交易到底用了多少 gas。Monad 按 gas 上限收费、不退还，回执和区块浏览器上的 `gasUsed` 显示的就是上限本身。Backdraft 在交易经过时量出真实用量，再用这笔交易里本来就要作废的剩余 gas，把结果按“合约 + 函数”记到链上。之后任何钱包、应用或 Agent 读一次链，就能拿到建议的 gas 上限。
 
-> On Monad a transaction is charged for its gas *limit*, not for the gas it uses, and nothing is refunded. That leaves a resource no other chain has: compute that is already paid for and about to be discarded. Backdraft is an open queue that spends it on posted jobs and pays the bounty back to the sender. Any contract that implements `work()` can plug in. The first job trains a small on-chain model that predicts how much gas a call needs.
+> On Monad a transaction is charged for its gas *limit*, and the receipt's `gasUsed` is that limit, so nobody can see what a call really used. Backdraft measures it on-chain and writes it to a per-(contract, function) oracle, paying for the write with leftover gas that was already charged and about to be discarded. Anyone can then read a suggested gas limit with one `eth_call`.
 
-测试网实测：一笔上限 50 万的交易，预留算力的利用率从 15% 提高到 90%，执行了 26 步链上训练，发送者赚回 32% 的手续费。
+**测试网实测（两笔真实交易）：**
 
-Monad Blitz @ 广州，2026-11-21。合约、脚本和文档全部在活动当天完成，赛前只有 Foundry / Next.js 的空白脚手架。
+1. 第一笔经过 Backdraft，上限写死 500,000。预言机记下这类调用实际用了 62,427 gas。（[交易](https://testnet.monadscan.com/tx/0x7ec501ef6ad409c0ce18f4aa5da0afa4f303c8f0a6fb755d0bfd08cb895b5c6f)）
+2. 读链：`suggestTxGasLimit` 返回 88,313。第二笔不经过 Backdraft，按这个上限直接发给应用，成功。（[交易](https://testnet.monadscan.com/tx/0x626c357c0be80dd8398d0670250340514f5b5149b56a960065be9903c4c5a6e6)）
+3. 手续费从 0.0505 MON 降到 0.0089 MON，**省了 82%**。
+
+Category Labs 的研究指出，按“合约 + 函数”的历史用量来设上限，可以把主网上多付的 gas 从三成降到一成多；同一篇文章也写明，真实用量目前在回执里查不到。Backdraft 提供的就是这份数据。
+
+### 它为什么不破坏交易的整体性
+
+- **不运行任何外部代码。** 记录用量只写 Backdraft 自己的一个存储槽，不调用别的合约，改不了任何人的状态。
+- **队列里的任务是收紧过的。** 只有合约所有者能登记，且只收自成一体的任务（只写自己的存储）。目前有两个：一个在链上拟合回归线，用来预测用量随输入规模变化的函数；一个是心跳。
+- **只需要很少的 gas。** 写一次记录约一两万 gas，不需要很多剩余。
+- **它会把自己用没。** 记得越准，下一笔留下的剩余就越少。
+
+### 读取方式
+
+```solidity
+// 这个合约的这个函数，建议给多少 gas（实测最大用量 + 7.5% 余量）
+(uint256 callGas, uint256 samples) = backdraft.suggest(target, selector);
+
+// 直接发这笔调用时，交易的 gas 上限该设多少（含 21,000 基础费用和数据费用）
+uint256 gasLimit = backdraft.suggestTxGasLimit(target, data);
+```
+
+对于用量随输入规模变化的函数，单个数字不够，`GasModel` 用剩余的 gas 在链上拟合一条直线 `gas ≈ w·n + b`（两个参数），191 步后预测误差 0.14%。
+
+Monad Blitz @ 广州，2026-11-21。合约、脚本、页面和文档全部在活动当天完成，赛前只有 Foundry / Next.js 的空白脚手架。
+
+> 说明：下文保留了项目早期的机制描述（把剩余 gas 用于开放的任务队列）。评审反馈指出，开放队列会破坏交易的整体性，且剩余 gas 的量撑不起大任务。现在的版本已经收窄为上面的预言机，任务队列不再对外开放。
 
 ## 这份资源从哪来
 
@@ -100,7 +127,7 @@ contract MyApp is BackdraftHook {
 
 | 合约 | 地址 |
 | --- | --- |
-| Afterburner（队列与包装入口；合约沿用项目最初的名字） | [`0xAF019654d479917bd38ADa0648eb9AdbFfc6db79`](https://testnet.monadscan.com/address/0xAF019654d479917bd38ADa0648eb9AdbFfc6db79) |
+| Afterburner（队列与包装入口；合约沿用项目最初的名字） | [`0xb22CA6B2090367F2487Caf0133Be3B2b18E7f607`](https://testnet.monadscan.com/address/0xb22CA6B2090367F2487Caf0133Be3B2b18E7f607) |
 | GasModel（链上训练的模型） | [`0x54e95229e1259D1A16E9f242f9816413bF9634b1`](https://testnet.monadscan.com/address/0x54e95229e1259D1A16E9f242f9816413bF9634b1) |
 | DemoApp（代表一个普通应用） | [`0x9097f732659811c4119a28B887ED8f829E11a7A5`](https://testnet.monadscan.com/address/0x9097f732659811c4119a28B887ED8f829E11a7A5) |
 | HookedApp（用 `recycle` 修饰符接入的示例应用） | [`0x501ee51685e01521776EF1639dB573A9b9969078`](https://testnet.monadscan.com/address/0x501ee51685e01521776EF1639dB573A9b9969078) |
@@ -108,7 +135,7 @@ contract MyApp is BackdraftHook {
 
 ## 安全性
 
-测试覆盖了以下情况（`contracts/test/Afterburner.t.sol`，10 项全部通过）：
+测试覆盖了以下情况（`contracts/test/Afterburner.t.sol`，13 项全部通过）：
 
 - 任务把给它的 gas 全部耗尽、返回超大数据、或者试图重入队列，都不会让发送者自己的调用失败。
 - 发送者的调用失败时，交易不回滚，剩余的 gas 仍然被回收。

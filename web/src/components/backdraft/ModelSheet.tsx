@@ -89,10 +89,10 @@ export default function ModelSheet({
   const lossPath = series.map(([s, v], i) => `${i ? "L" : "M"}${lx(s).toFixed(1)},${ly(v).toFixed(1)}`).join(" ");
 
   return (
-    <section className="bd-screen" id="s5" aria-label="链上 AI">
+    <section className="bd-screen" id="s5" aria-label="回归线">
       <header className="bd-mast">
         <div className="bd-brand">
-          BACKDRAFT<span>链上 AI</span>
+          BACKDRAFT<span>回归线</span>
         </div>
         <div className="bd-meta">
           {source === "record" && <span className="bd-notice">回放 · 当天真实记录</span>}
@@ -104,9 +104,9 @@ export default function ModelSheet({
 
       <div>
         <h2 className="bd-headline">
-          {fresh ? "还没开始。去点一把火。" : "链上 AI 最贵的是 gas。这里每天有两千亿，不要钱。"}
+          {fresh ? "还没开始。去点一把火。" : "输入越大，用得越多。剩余的 gas 在链上拟合这条线。"}
         </h2>
-        <p className="bd-body">下面这个模型完全在链上训练。它的每一步，都是别人交易里剩下的 gas 算出来的。</p>
+        <p className="bd-body">有的函数，用量随输入规模变化，记一个数不够。预言机就用剩余的 gas 在链上拟合一条直线，两个参数，每一步都由交易里本来要作废的 gas 支付。</p>
       </div>
 
       <div className="bd-model">
@@ -230,7 +230,7 @@ export default function ModelSheet({
       </div>
 
       <p className="bd-quote">
-        它学的是“一笔调用需要多少 gas”。用没人用的 gas，训练一个让 gas 少被闲置的 AI。
+        它学的是“一笔调用需要多少 gas”。用没人用的 gas，拟合一条让 gas 少被闲置的线。
       </p>
 
       <p className="bd-note">

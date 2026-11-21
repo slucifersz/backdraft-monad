@@ -20,7 +20,7 @@ export const RPC_URL =
 export const EXPLORER = "https://testnet.monadscan.com";
 
 export const ADDR = {
-  afterburner: "0xAF019654d479917bd38ADa0648eb9AdbFfc6db79",
+  afterburner: "0xb22CA6B2090367F2487Caf0133Be3B2b18E7f607",
   gasModel: "0x54e95229e1259D1A16E9f242f9816413bF9634b1",
   demoApp: "0x9097f732659811c4119a28B887ED8f829E11a7A5",
   heartbeat: "0xc02fd9FC8aE928555f8F0672709D24EAa8fe3251",
@@ -35,6 +35,10 @@ export const afterburnerAbi = parseAbi([
   "function totalUnits() view returns (uint48)",
   "function totalGasRecycled() view returns (uint64)",
   "function totalBountyPaid() view returns (uint96)",
+  "function stats(address target, bytes4 selector) view returns (uint64 last, uint64 max, uint64 avg, uint32 count, uint32 updatedAt)",
+  "function suggest(address target, bytes4 selector) view returns (uint256 callGas, uint256 samples)",
+  "function suggestTxGasLimit(address target, bytes data) view returns (uint256)",
+  "event Recorded(address indexed target, bytes4 indexed selector, uint256 gasUsed, uint256 maxGas, uint256 samples)",
   "event Burned(address indexed sender, address indexed target, bool mainOk, uint256 mainGas, uint256 jobGas, uint256 units, uint256 bounty, uint256 gasLeft)",
   "event JobRan(uint256 indexed id, address indexed sender, uint256 gasUsed, uint256 units, uint256 bounty)",
   "event JobFailed(uint256 indexed id, uint256 gasUsed)",
@@ -245,6 +249,65 @@ export async function estimateDirect(call: CallKind, from: Hex): Promise<number 
   }
 }
 
+// ------------------------------------------------------------ the gas oracle
+
+export type Suggestion = {
+  /** Gas limit the oracle suggests for sending this call directly; 0 if never measured. */
+  gasLimit: number;
+  /** Largest real usage of this function measured on-chain so far. */
+  maxUsed: number;
+  /** Most recent measurement. */
+  lastUsed: number;
+  /** How many times this function has been measured. */
+  samples: number;
+};
+
+/** Ask the on-chain oracle what gas limit this call needs. */
+export async function readSuggestion(call: CallKind): Promise<Suggestion> {
+  const data = appCalldata(call);
+  const selector = data.slice(0, 10) as Hex;
+  const ab = { address: ADDR.afterburner, abi: afterburnerAbi } as const;
+  const [gasLimit, stat] = await Promise.all([
+    publicClient.readContract({ ...ab, functionName: "suggestTxGasLimit", args: [ADDR.demoApp, data] }),
+    publicClient.readContract({ ...ab, functionName: "stats", args: [ADDR.demoApp, selector] }),
+  ]);
+  return { gasLimit: Number(gasLimit), lastUsed: Number(stat[0]), maxUsed: Number(stat[1]), samples: stat[3] };
+}
+
+export type DirectTx = {
+  hash: Hex;
+  gasLimit: number;
+  gasPrice: bigint;
+  fee: bigint;
+  status: "success" | "reverted";
+};
+
+/** Send the call straight to the app (not through Backdraft) with the given gas limit. */
+export async function sendDirect(call: CallKind, gasLimit: number, fees: Fees): Promise<DirectTx> {
+  const request = {
+    to: ADDR.demoApp,
+    data: appCalldata(call),
+    gas: BigInt(gasLimit),
+    maxFeePerGas: fees.maxFeePerGas,
+    maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
+  } as const;
+  let hash: Hex;
+  if (injected) {
+    hash = await injected.client.sendTransaction({ ...request, account: injected.address, chain: monadTestnet });
+  } else {
+    if (!walletClient || !demoAccount) throw new Error("no demo account configured");
+    hash = await walletClient.sendTransaction(request);
+  }
+  const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
+  return {
+    hash,
+    gasLimit,
+    gasPrice: receipt.effectiveGasPrice,
+    fee: BigInt(gasLimit) * receipt.effectiveGasPrice,
+    status: receipt.status,
+  };
+}
+
 export type Fees = { maxFeePerGas: bigint; maxPriorityFeePerGas: bigint; expected: bigint };
 
 export async function currentFees(): Promise<Fees> {
@@ -291,6 +354,8 @@ export type SentTx = Outcome & {
   fee: bigint;
   status: "success" | "reverted";
   jobRuns: { id: number; gasUsed: number; units: number; bounty: bigint }[];
+  /** What this transaction wrote to the gas oracle (null if nothing was recorded). */
+  recorded: { gasUsed: number; samples: number } | null;
 };
 
 export async function sendExec(call: CallKind, gasLimit: number, fees: Fees): Promise<SentTx> {
@@ -316,6 +381,7 @@ export function decodeReceipt(receipt: TransactionReceipt, gasLimit: number): Se
   const logs = parseEventLogs({ abi: afterburnerAbi, logs: receipt.logs });
   const burned = logs.find((l) => l.eventName === "Burned");
   const runs = logs.filter((l) => l.eventName === "JobRan");
+  const rec = logs.find((l) => l.eventName === "Recorded");
   const args = burned && burned.eventName === "Burned" ? burned.args : undefined;
   const gasPrice = receipt.effectiveGasPrice;
   return {
@@ -331,6 +397,7 @@ export function decodeReceipt(receipt: TransactionReceipt, gasLimit: number): Se
     units: Number(args?.units ?? 0n),
     bounty: args?.bounty ?? 0n,
     gasLeft: Number(args?.gasLeft ?? 0n),
+    recorded: rec && rec.eventName === "Recorded" ? { gasUsed: Number(rec.args.gasUsed), samples: Number(rec.args.samples) } : null,
     jobRuns: runs.map((r) =>
       r.eventName === "JobRan"
         ? { id: Number(r.args.id), gasUsed: Number(r.args.gasUsed), units: Number(r.args.units), bounty: r.args.bounty }

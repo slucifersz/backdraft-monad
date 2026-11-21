@@ -158,6 +158,42 @@ contract AfterburnerTest is Test {
         assertApproxEqRel(model.predict(16), 86_400, 0.05e18);
     }
 
+    // ---- the gas oracle ----
+
+    function test_oracleRecordsRealUsageAndSuggestsATightLimit() public {
+        bytes memory data = abi.encodeCall(DemoApp.crunch, (8));
+        // warm the app's storage once so both measurements see the same state
+        _exec(600_000, data);
+        (, uint256 mainGas,,,) = _exec(600_000, data);
+
+        (uint64 last, uint64 max,, uint32 count,) = ab.stats(address(app), DemoApp.crunch.selector);
+        assertEq(count, 2);
+        assertEq(last, mainGas, "the oracle holds what the call really used");
+        assertGe(max, last);
+
+        // a sender who never used Backdraft reads the oracle and sends directly
+        uint256 limit = ab.suggestTxGasLimit(address(app), data);
+        assertGt(limit, 0);
+        assertLt(limit, 200_000, "far below the hardcoded 500k");
+        vm.prank(user, user);
+        (bool ok,) = address(app).call{gas: limit - 21_000 - 204}(data); // call gas only: test calls have no intrinsic cost
+        assertTrue(ok, "the suggested limit is enough");
+    }
+
+    function test_oracleIgnoresFailedCallsAndUnknownFunctions() public {
+        _exec(500_000, abi.encodeCall(DemoApp.soldOut, ()));
+        (,,, uint32 count,) = ab.stats(address(app), DemoApp.soldOut.selector);
+        assertEq(count, 0, "a reverted call is not a measurement");
+        assertEq(ab.suggestTxGasLimit(address(app), abi.encodeCall(DemoApp.soldOut, ())), 0);
+    }
+
+    function test_onlyOwnerCanAdmitJobs() public {
+        vm.deal(user, 1 ether);
+        vm.prank(user);
+        vm.expectRevert(Afterburner.NotOwner.selector);
+        ab.postJob{value: 0.1 ether}(address(beat), 30_000, 80_000, 50 gwei, "someone else's job");
+    }
+
     // ---- hook path: an application adds the `recycle` modifier ----
 
     function test_hookRecyclesAndKeepsTheCaller() public {

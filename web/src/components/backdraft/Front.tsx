@@ -40,7 +40,7 @@ export default function Front({ active }: { active: boolean }) {
         <div className="bd-brand">
           BACKDRAFT<span>回燃</span>
         </div>
-        <div className="bd-meta">Monad 空转算力的开放入口 · Monad Blitz @ 广州 · 2026-11-21</div>
+        <div className="bd-meta">一个不用喂钱的链上 Gas 预言机 · Monad Blitz @ 广州 · 2026-11-21</div>
       </header>
 
       <div className="bd-front-main">
@@ -57,9 +57,9 @@ export default function Front({ active }: { active: boolean }) {
         <div className="bd-front-side">
           <h1 className="bd-headline">付了钱，没人用。</h1>
           <p className="bd-sub">
-            够一个链上 AI 模型每天训练两千万步。
+            回执里查不到它们到底用了多少。
             <br />
-            算力的钱，已经有人付过了。
+            Backdraft 让这个数字上了链，一分钱不用多花。
           </p>
           <p className="bd-body">
             <span className="bd-purple">Monad</span>{" "}
@@ -95,11 +95,11 @@ export default function Front({ active }: { active: boolean }) {
         <div className="bd-block">我们把它点着了。</div>
         <div className="bd-col">
           <b>只有 Monad 有</b>
-          <p>别的链把没用完的 gas 退给你。Monad 把它留了下来。</p>
+          <p>别的链把没用完的 gas 退给你。Monad 不退：交易结束之前，这部分额度已经付过钱。</p>
         </div>
         <div className="bd-col">
           <b>回燃</b>
-          <p>一台已经有人买单、却没人开机的计算机。Backdraft 把它接通，第一件事是拿它训练链上的 AI。</p>
+          <p>用这笔本来要作废的 gas，把“这类调用到底用了多少”记到链上。下一笔照着设，就不用再多付。</p>
         </div>
         <a className="bd-btn" href="#s4">
           点火 ↓
