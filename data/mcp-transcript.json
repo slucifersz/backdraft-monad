@@ -1,0 +1,164 @@
+{
+  "server": {
+    "name": "backdraft",
+    "version": "0.1.0"
+  },
+  "protocolVersion": "2025-03-26",
+  "tools": [
+    {
+      "name": "backdraft_status",
+      "description": "Read the Backdraft job queue on Monad Testnet: which jobs are waiting, what they pay per g…",
+      "input": []
+    },
+    {
+      "name": "backdraft_simulate",
+      "description": "Dry-run a contract call through Backdraft with exactly the gas limit you intend to use. No…",
+      "input": [
+        "to",
+        "data",
+        "gas",
+        "from"
+      ]
+    },
+    {
+      "name": "backdraft_send",
+      "description": "Send a contract call through Backdraft on Monad Testnet using the configured signer. After…",
+      "input": [
+        "to",
+        "data",
+        "gas"
+      ]
+    }
+  ],
+  "calls": [
+    {
+      "tool": "backdraft_status",
+      "arguments": {},
+      "isError": false,
+      "result": {
+        "network": "Monad Testnet (10143)",
+        "backdraft": "0xAF019654d479917bd38ADa0648eb9AdbFfc6db79",
+        "totals": {
+          "burns": 22,
+          "unitsOfWork": 300,
+          "gasRecycled": 3929095,
+          "bountyPaidMon": "0.19645475",
+          "heartbeats": 24
+        },
+        "jobs": [
+          {
+            "id": 0,
+            "label": "Heartbeat: a keeper-style poke",
+            "active": true,
+            "bountyPerGasGwei": 50,
+            "escrowMon": "0.06500455"
+          },
+          {
+            "id": 1,
+            "label": "Train the on-chain gas model",
+            "active": false,
+            "bountyPerGasGwei": 50,
+            "escrowMon": "0"
+          },
+          {
+            "id": 2,
+            "label": "Train the on-chain gas model",
+            "active": false,
+            "bountyPerGasGwei": 50,
+            "escrowMon": "0"
+          },
+          {
+            "id": 3,
+            "label": "Train the on-chain gas model",
+            "active": true,
+            "bountyPerGasGwei": 50,
+            "escrowMon": "0.6253786"
+          }
+        ],
+        "gasModel": {
+          "address": "0x54e95229e1259D1A16E9f242f9816413bF9634b1",
+          "steps": 216,
+          "loss": 0.000003,
+          "predictedGasForN8": 73983,
+          "measuredGasForN8": 74081
+        }
+      }
+    },
+    {
+      "tool": "backdraft_simulate",
+      "arguments": {
+        "to": "0x9097f732659811c4119a28B887ED8f829E11a7A5",
+        "data": "0x2032d3160000000000000000000000000000000000000000000000000000000000000008",
+        "gas": 500000
+      },
+      "isError": false,
+      "result": {
+        "simulated": true,
+        "gasLimit": 500000,
+        "yourCallSucceeds": true,
+        "yourCallGas": 62419,
+        "recycledGas": 323478,
+        "unitsOfWork": 27,
+        "feeMon": "0.0505",
+        "bountyMon": "0.0161739",
+        "recoveredShareOfFee": 0.3202,
+        "worthRecycling": true
+      }
+    },
+    {
+      "tool": "backdraft_simulate",
+      "arguments": {
+        "to": "0x9097f732659811c4119a28B887ED8f829E11a7A5",
+        "data": "0x2032d3160000000000000000000000000000000000000000000000000000000000000008",
+        "gas": 114037
+      },
+      "isError": false,
+      "result": {
+        "simulated": true,
+        "gasLimit": 114037,
+        "yourCallSucceeds": true,
+        "yourCallGas": 62419,
+        "recycledGas": 0,
+        "unitsOfWork": 0,
+        "feeMon": "0.011517737",
+        "bountyMon": "0",
+        "recoveredShareOfFee": 0,
+        "worthRecycling": false
+      }
+    },
+    {
+      "tool": "backdraft_send",
+      "arguments": {
+        "to": "0x9097f732659811c4119a28B887ED8f829E11a7A5",
+        "data": "0x2032d3160000000000000000000000000000000000000000000000000000000000000008",
+        "gas": 300000
+      },
+      "isError": false,
+      "result": {
+        "hash": "0xd2088023886a79de77a7913d5e2f2c21c2c3580f1b000126219ae58d173280a0",
+        "explorer": "https://testnet.monadscan.com/tx/0xd2088023886a79de77a7913d5e2f2c21c2c3580f1b000126219ae58d173280a0",
+        "gasLimit": 300000,
+        "receiptGasUsed": 300000,
+        "yourCallSucceeded": true,
+        "yourCallGas": 62419,
+        "recycledGas": 126377,
+        "unitsOfWork": 8,
+        "gasStillUnused": 49323,
+        "feeMon": "0.0303",
+        "bountyMon": "0.00631885",
+        "recoveredShareOfFee": 0.2085,
+        "balanceChangeMon": "-0.02398115"
+      }
+    },
+    {
+      "tool": "backdraft_simulate",
+      "arguments": {
+        "to": "0x123",
+        "data": "0x",
+        "gas": 500000
+      },
+      "isError": true,
+      "result": "MCP error -32602: Input validation error: Invalid arguments for tool backdraft_simulate: a 20-byte hex address at to"
+    }
+  ]
+}
