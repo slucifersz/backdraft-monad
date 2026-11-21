@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Monad Blitz 广州",
-  description: "Built on Monad testnet",
+  title: "Afterburner — put paid-for gas to work on Monad",
+  description:
+    "On Monad you pay for your gas limit, not what you use. Afterburner spends the leftover on queued jobs and pays you back.",
 };
 
 export default function RootLayout({
@@ -14,9 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

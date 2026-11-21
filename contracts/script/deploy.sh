@@ -29,7 +29,7 @@ forge build -q
 OUT=""
 for attempt in 1 2 3; do
   if OUT="$(forge create "$TARGET" --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" \
-        --broadcast --json "${CREATE_ARGS[@]}" 2>&1)"; then
+        --broadcast --json ${CREATE_ARGS[@]+"${CREATE_ARGS[@]}"} 2>&1)"; then
     break
   fi
   if echo "$OUT" | grep -q transactionHash; then break; fi
@@ -54,7 +54,7 @@ trap 'rm -rf "$TMP"' EXIT
 VERIFY_ARGS=()
 [ -n "$CTOR_ARGS_HEX" ] && VERIFY_ARGS=(--constructor-args "0x$CTOR_ARGS_HEX")
 forge verify-contract "$ADDR" "$TARGET" --chain "$CHAIN_ID" \
-  --show-standard-json-input "${VERIFY_ARGS[@]}" > "$TMP/input.json"
+  --show-standard-json-input ${VERIFY_ARGS[@]+"${VERIFY_ARGS[@]}"} > "$TMP/input.json"
 jq '.metadata' "$ARTIFACT" > "$TMP/meta.json"
 VER="v$(jq -r '.metadata.compiler.version' "$ARTIFACT")"
 jq -n --arg a "$ADDR" --arg n "$TARGET" --arg v "$VER" --arg c "$CTOR_ARGS_HEX" \

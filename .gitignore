@@ -19,3 +19,6 @@ contracts/broadcast/*/31337/
 
 # os
 .DS_Store
+
+# private working notes
+notes/

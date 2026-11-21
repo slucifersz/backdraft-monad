@@ -1,0 +1,58 @@
+[
+  {
+    "name": "Afterburner",
+    "address": "0xDD24D98edbaA5bbf42FFed41551fd5d96136888C",
+    "tx": "0x7821b4752e7f2bc4bb8e1473530a376d60b6aa27bbed6e4259c914b78d55a779",
+    "chainId": 10143,
+    "deployedAt": "2026-11-21T06:03:15Z",
+    "current": false
+  },
+  {
+    "name": "GasModel",
+    "address": "0xc9b2C161Aa4875C74907b9194A81ae26c184F1ED",
+    "tx": "0x6e244108520e030082b0adf33a9573e4d4af0fce6054e933eb4deca3c8b091c6",
+    "chainId": 10143,
+    "deployedAt": "2026-11-21T06:04:33Z",
+    "current": false
+  },
+  {
+    "name": "DemoApp",
+    "address": "0x9097f732659811c4119a28B887ED8f829E11a7A5",
+    "tx": "0x2991febc0c34b0b46f485cfbf54772e82aed2aee836ea35385dcc1d6b26add55",
+    "chainId": 10143,
+    "deployedAt": "2026-11-21T06:05:54Z",
+    "current": true
+  },
+  {
+    "name": "Heartbeat",
+    "address": "0xc02fd9FC8aE928555f8F0672709D24EAa8fe3251",
+    "tx": "0xd542d2590e9696b1a2272af1c3c1d8827f4cc007fa66df6ca341eda8d6987e0a",
+    "chainId": 10143,
+    "deployedAt": "2026-11-21T06:07:06Z",
+    "current": true
+  },
+  {
+    "name": "Afterburner",
+    "address": "0xAF019654d479917bd38ADa0648eb9AdbFfc6db79",
+    "tx": "0xcd392b4025006c6a1f99f9d7198304ba48d4ad179d751c715183fd895cd08249",
+    "chainId": 10143,
+    "deployedAt": "2026-11-21T06:11:00Z",
+    "current": true
+  },
+  {
+    "name": "GasModel",
+    "address": "0x1484390Fb4079D732e172f4cE28B913fD1B78061",
+    "tx": "0x951bc835fe14a8599acefe5432811b0123bbbe984ce5a8e475f04277b6f1a7ce",
+    "chainId": 10143,
+    "deployedAt": "2026-11-21T06:14:49Z",
+    "current": false
+  },
+  {
+    "name": "GasModel",
+    "address": "0x54e95229e1259D1A16E9f242f9816413bF9634b1",
+    "tx": "0x1be0cb16404ee5d4e0c300429848195115e5c980d530fa573d34d87d5fe195c0",
+    "chainId": 10143,
+    "deployedAt": "2026-11-21T06:21:50Z",
+    "current": true
+  }
+]
