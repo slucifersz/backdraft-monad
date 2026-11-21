@@ -1,0 +1,21 @@
+# secrets
+.env
+.env.*
+!.env.example
+.mojo/
+
+# node / next
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+.vercel/
+
+# foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/*/31337/
+
+# os
+.DS_Store
