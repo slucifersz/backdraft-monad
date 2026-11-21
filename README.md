@@ -29,9 +29,9 @@ Backdraft 是一个链上的任务队列，加一个包装入口。
 
 应用合约不需要做任何改动。也可以选择在自己函数的末尾调用 `burn(beneficiary)` 直接接入。
 
-### 一个函数接入
+### 三种接法
 
-队列对任何人开放。任务合约只需要实现一个函数：
+**一、你需要算力：挂一个任务。** 任务合约只需要实现一个函数：
 
 ```solidity
 contract MyJob is IAfterburnerJob {
@@ -41,9 +41,23 @@ contract MyJob is IAfterburnerJob {
 }
 ```
 
-然后调用 `postJob(target, minGas, maxGas, bountyPerGas, label)` 并附上押金。赏金按任务实际用掉的 gas 结算，押金用完任务自动停，连续失败 3 次会被停用。目前挂任务需要直接调合约，任务按登记的先后顺序执行。
+然后调用 `postJob(target, minGas, maxGas, bountyPerGas, label)` 并附上押金。赏金按任务实际用掉的 gas 结算，押金用完任务自动停，连续失败 3 次会被停用。目前挂任务需要直接调合约，任务按登记的先后顺序执行。适合需要算力、但不赶时间的操作：链上模型的训练与批量推理、金库复利结算、批量发放、链上游戏的状态推进、过期数据清理。
 
-适合的是需要算力、但不赶时间的操作：链上模型的训练与批量推理、金库复利结算、批量发放、链上游戏的状态推进、过期数据清理。
+**二、你的用户有剩余 gas：加一个词。** 继承 [`BackdraftHook`](contracts/src/BackdraftHook.sol)，给函数加上 `recycle` 修饰符：
+
+```solidity
+contract MyApp is BackdraftHook {
+    constructor(IBackdraft backdraft) BackdraftHook(backdraft) {}
+
+    function swap(/* ... */) external recycle {
+        // ……你自己的逻辑……
+    }
+}
+```
+
+函数执行完之后，调用者交易里剩下的 gas 会被用来执行队列里的任务，赏金付给调用者；用 `recycleTo(金库地址)` 则付给应用自己。应用看到的调用者不变。剩余不足 15 万 gas 时自动跳过，Backdraft 内部出任何错都不会让你的函数失败。测试网实测（[HookedApp](https://testnet.monadscan.com/address/0x501ee51685e01521776EF1639dB573A9b9969078)，上限 50 万）：回收 300,493 gas，赚回 28.6% 的手续费。
+
+**三、你是脚本、机器人或 Agent：用 MCP 或命令行。** 不改任何合约，发交易时走包装入口 `exec(target, data)`。见下文"给 Agent 用"。这种接法里目标合约看到的调用者是 Backdraft 的合约。
 
 ### 为什么只在 Monad 上成立
 
@@ -89,17 +103,19 @@ contract MyJob is IAfterburnerJob {
 | Afterburner（队列与包装入口；合约沿用项目最初的名字） | [`0xAF019654d479917bd38ADa0648eb9AdbFfc6db79`](https://testnet.monadscan.com/address/0xAF019654d479917bd38ADa0648eb9AdbFfc6db79) |
 | GasModel（链上训练的模型） | [`0x54e95229e1259D1A16E9f242f9816413bF9634b1`](https://testnet.monadscan.com/address/0x54e95229e1259D1A16E9f242f9816413bF9634b1) |
 | DemoApp（代表一个普通应用） | [`0x9097f732659811c4119a28B887ED8f829E11a7A5`](https://testnet.monadscan.com/address/0x9097f732659811c4119a28B887ED8f829E11a7A5) |
+| HookedApp（用 `recycle` 修饰符接入的示例应用） | [`0x501ee51685e01521776EF1639dB573A9b9969078`](https://testnet.monadscan.com/address/0x501ee51685e01521776EF1639dB573A9b9969078) |
 | Heartbeat（最简单的任务） | [`0xc02fd9FC8aE928555f8F0672709D24EAa8fe3251`](https://testnet.monadscan.com/address/0xc02fd9FC8aE928555f8F0672709D24EAa8fe3251) |
 
 ## 安全性
 
-测试覆盖了以下情况（`contracts/test/Afterburner.t.sol`，7 项全部通过）：
+测试覆盖了以下情况（`contracts/test/Afterburner.t.sol`，10 项全部通过）：
 
 - 任务把给它的 gas 全部耗尽、返回超大数据、或者试图重入队列，都不会让发送者自己的调用失败。
 - 发送者的调用失败时，交易不回滚，剩余的 gas 仍然被回收。
 - 赏金不会超过回收的 gas 所花费用的 90%。
 - 上限设紧时不执行任何任务。
 - 任务连续失败 3 次会被自动停用。
+- 应用用 `recycle` 修饰符接入时，看到的调用者不变；剩余太少时自动跳过；Backdraft 出错不会让应用的函数失败。
 
 ## 已知的局限
 
@@ -117,7 +133,7 @@ contract MyJob is IAfterburnerJob {
 ```
 contracts/   Foundry 工程：Afterburner（Backdraft 的核心合约）、GasModel、DemoApp、测试、部署脚本
 web/         Next.js 前端；src/lib/chain.ts 是读合约、模拟、发交易的数据层
-web/scripts/ backdraft.ts 命令行
+web/scripts/ backdraft.ts 命令行、mcp.ts MCP 服务
 skills/      给编码 Agent 用的 skill
 ```
 
@@ -143,7 +159,29 @@ node scripts/backdraft.ts send --to <合约地址> --data <calldata> --gas <上�
 
 ## 给 Agent 用
 
-自己构造交易的脚本、机器人和 Agent 没有钱包替它们设上限，是多付 gas 最多的一类发送者。[`skills/backdraft/SKILL.md`](skills/backdraft/SKILL.md) 让编码 Agent 在 Monad 上发交易时先模拟、再决定上限，剩余部分走 Backdraft。
+自己构造交易的脚本、机器人和 Agent 没有钱包替它们设上限，是剩余 gas 最多的一类发送者。仓库里提供两样东西：
+
+**MCP 服务**（[`web/scripts/mcp.ts`](web/scripts/mcp.ts)，stdio）：
+
+| 工具 | 作用 |
+| --- | --- |
+| `backdraft_status` | 队列里有哪些任务、各付多少赏金、累计回收了多少 gas、模型训练到哪一步 |
+| `backdraft_simulate` | 给定目标合约、调用数据和 gas 上限，预测自己的调用用多少、能回收多少、能赚回多少；不发送任何东西 |
+| `backdraft_send` | 通过 Backdraft 发出这笔调用，返回上限的真实分段和赏金 |
+
+接入方式（以 Claude Code 的 `.mcp.json` 为例，签名私钥放在环境变量 `BACKDRAFT_KEY`）：
+
+```json
+{
+  "mcpServers": {
+    "backdraft": { "command": "node", "args": ["scripts/mcp.ts"], "cwd": "web" }
+  }
+}
+```
+
+一次真实的调用记录在 [`web/public/data/mcp-transcript.json`](web/public/data/mcp-transcript.json)：握手、列出工具、查询、两次模拟、一次真实发送、一次被拒绝的错误输入。
+
+**Skill**（[`skills/backdraft/SKILL.md`](skills/backdraft/SKILL.md)）：让编码 Agent 在 Monad 上发交易时先模拟、再决定上限，剩余部分走 Backdraft。
 
 ## 参考
 

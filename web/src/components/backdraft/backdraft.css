@@ -614,3 +614,439 @@ html:has(.bd) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* =====================================================================
+   Final nine-sheet page additions
+   ===================================================================== */
+@media (min-width: 900px) and (min-height: 540px) {
+  html:has(.bd) {
+    scroll-snap-type: y mandatory;
+  }
+}
+.bd-hatch.fire {
+  background-image: linear-gradient(
+    135deg,
+    var(--fire) 25%,
+    transparent 25%,
+    transparent 50%,
+    var(--fire) 50%,
+    var(--fire) 75%,
+    transparent 75%
+  );
+}
+.bd-headline {
+  margin: 0;
+  font-size: min(3.5vw, 6.2vh);
+  font-weight: 600;
+  line-height: 1.15;
+}
+.bd-headline.xl {
+  font-size: min(6.4vw, 11.5vh);
+}
+.bd-sub {
+  margin: 0;
+  font-size: clamp(16px, 2vw, 40px);
+  font-weight: 600;
+  line-height: 1.35;
+}
+.bd-body {
+  margin: 0;
+  font-size: clamp(13px, 1.25vw, 25px);
+  line-height: 1.5;
+}
+.bd-quote {
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.5em 0.9em;
+  font-size: clamp(15px, 1.65vw, 33px);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.bd-link {
+  background: none;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  padding: 0 0 1px;
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 28px;
+}
+.bd-link:disabled {
+  cursor: not-allowed;
+  color: var(--mute);
+}
+
+/* ---------- sheet 1 ---------- */
+.bd-front-main {
+  display: flex;
+  align-items: flex-end;
+  gap: 3vw;
+}
+.bd-front-figure {
+  flex-shrink: 0;
+}
+.bd-front-figure .bd-giant {
+  font-size: min(15.5vw, 30vh);
+  white-space: nowrap;
+}
+.bd-giant-cn {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.8em;
+  letter-spacing: 0;
+  margin-left: 0.04em;
+}
+.bd-front-unit {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  margin-top: 1.2vh;
+  font-size: clamp(18px, 2.2vw, 44px);
+  font-weight: 600;
+}
+.bd-front-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4vh;
+  min-width: 0;
+}
+.bd-front-side .bd-headline {
+  font-size: min(4.6vw, 8.4vh);
+  white-space: nowrap;
+}
+.bd-split-waste.fire span {
+  border-color: var(--ink);
+}
+.bd-split-notes {
+  display: flex;
+  justify-content: space-between;
+  gap: 2vw;
+  margin-top: 0.7vh;
+}
+.bd-since {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.8vw;
+  font-size: clamp(13px, 1.25vw, 25px);
+  font-weight: 600;
+}
+.bd-since b {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(18px, 2.3vw, 46px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--fire-ink);
+}
+.bd-front-foot {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.35fr) auto;
+  gap: 2vw;
+  align-items: stretch;
+}
+.bd-block {
+  background: var(--fire);
+  padding: 1.6vh 1.6vw;
+  font-size: min(3.6vw, 6.4vh);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.bd-col {
+  border-top: 4px solid var(--ink);
+  padding-top: 0.8vh;
+}
+.bd-col b {
+  font-size: clamp(13px, 1.15vw, 23px);
+  letter-spacing: 0.1em;
+}
+.bd-col p {
+  margin: 0.4vh 0 0;
+  font-size: clamp(13px, 1.2vw, 24px);
+  line-height: 1.5;
+}
+.bd-front-foot .bd-btn {
+  align-self: end;
+}
+
+/* ---------- sheets 4 and 6 ---------- */
+.bd-account {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.2vw;
+  font-size: clamp(12px, 1.1vw, 22px);
+}
+.bd-stage.short {
+  min-height: 19vh;
+}
+.bd-predict {
+  margin: 0;
+  font-size: clamp(15px, 1.7vw, 34px);
+  line-height: 1.4;
+}
+.bd-util-from {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: min(7vw, 12.5vh);
+  line-height: 1;
+  color: #8a8a85;
+  letter-spacing: -0.03em;
+}
+.bd-arrow {
+  font-size: min(6vw, 11vh);
+  font-weight: 900;
+  line-height: 1;
+}
+.bd-util-from ~ .bd-slab {
+  font-size: min(12.5vw, 22vh);
+}
+.bd-util-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.2vh;
+  font-size: clamp(13px, 1.3vw, 26px);
+  font-weight: 600;
+  min-width: 0;
+}
+.bd-claim {
+  margin: 0;
+  background: var(--fire);
+  padding: 0.4em 0.7em;
+  font-size: clamp(15px, 1.7vw, 34px);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.bd-claim.ink {
+  background: var(--ink);
+  color: var(--paper);
+}
+.bd-bar.ghost {
+  background: var(--paper);
+  gap: 0;
+}
+.bd-bar.ghost .bd-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.bd-bar.ghost .bd-seg span {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  padding: 0.1em 0.6em;
+  font-size: clamp(12px, 1.1vw, 22px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.bd-ghost-call {
+  border: 4px dashed var(--purple);
+}
+.bd-ghost-call span {
+  border-color: var(--purple) !important;
+  color: var(--purple-ink);
+}
+.bd-ghost-call.filled {
+  background: var(--purple);
+  border-style: solid;
+  animation: bd-grow 0.5s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+  transform-origin: left center;
+}
+.bd-ghost-job {
+  border: 4px dashed var(--fire);
+  border-left: 0;
+}
+.bd-fail-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1vh;
+}
+.bd-foot .bd-btn {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* ---------- sheet 5 ---------- */
+.bd-model {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 2.4vw;
+  height: 37vh;
+  min-height: 240px;
+}
+.bd-model svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.bd-model svg text {
+  fill: var(--ink);
+  font-family: var(--sans);
+}
+.bd-model-plot {
+  position: relative;
+  border: 4px solid var(--ink);
+  padding: 0.6vh 0.6vw;
+  min-height: 0;
+}
+.bd-model-flash {
+  position: absolute;
+  top: 8%;
+  left: 15%;
+  background: var(--fire);
+  padding: 0.2em 0.7em;
+  font-weight: 700;
+  font-size: clamp(15px, 1.7vw, 34px);
+}
+.bd-model-key {
+  position: absolute;
+  right: 1.2vw;
+  bottom: 17%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3vh;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  padding: 0.3em 0.6em;
+  font-size: clamp(11px, 1vw, 20px);
+  font-weight: 600;
+}
+.bd-model-key .dot {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  border-radius: 50%;
+  background: var(--ink);
+  margin-right: 0.4em;
+}
+.bd-model-key .line {
+  display: inline-block;
+  width: 1.6em;
+  height: 0.3em;
+  background: var(--fire);
+  margin-right: 0.4em;
+  vertical-align: middle;
+}
+.bd-model-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1vh;
+  min-height: 0;
+}
+.bd-model-steps {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: min(9vw, 15vh);
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+.bd-model-unit {
+  font-size: clamp(14px, 1.4vw, 28px);
+  font-weight: 600;
+  margin-top: 0.6vh;
+}
+.bd-model-loss {
+  flex: 1;
+  min-height: 0;
+  border-top: 4px solid var(--ink);
+  padding-top: 0.6vh;
+  display: flex;
+  flex-direction: column;
+}
+.bd-model-loss svg {
+  flex: 1;
+  min-height: 0;
+}
+.bd-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2vw;
+}
+.bd-facts > div {
+  border-top: 4px solid var(--ink);
+  padding-top: 0.6vh;
+}
+.bd-facts b {
+  font-size: clamp(14px, 1.35vw, 27px);
+}
+.bd-facts p {
+  margin: 0.2vh 0 0;
+  font-size: clamp(12px, 1.1vw, 22px);
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .bd-front-main,
+  .bd-split-notes {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .bd-front-foot,
+  .bd-model,
+  .bd-facts {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+  .bd-front-side .bd-headline,
+  .bd-block {
+    white-space: normal;
+  }
+}
+
+/* fit sheets 4 and 6 into one 16:9 screen */
+.bd-stage {
+  min-height: 22vh;
+}
+.bd-bar {
+  height: 12vh;
+  min-height: 72px;
+}
+#s6 .bd-slab:not(.sm) {
+  font-size: min(11vw, 19vh);
+}
+#s6 .bd-stage.short {
+  min-height: 17vh;
+}
+
+.bd-util-side {
+  flex: 1;
+}
+.bd-util-side .bd-claim {
+  font-size: clamp(14px, 1.5vw, 30px);
+}
+
+.bd-model-explain {
+  position: absolute;
+  left: 14%;
+  top: 24%;
+  max-width: 44%;
+  margin: 0;
+  font-size: clamp(13px, 1.3vw, 26px);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.bd-model-plot {
+  display: flex;
+  flex-direction: column;
+}
+.bd-model-plot svg {
+  flex: 1;
+  min-height: 0;
+}
+.bd-model-explain {
+  position: static;
+  max-width: none;
+  border-top: 2px solid var(--ink);
+  padding-top: 0.5vh;
+  font-size: clamp(13px, 1.25vw, 25px);
+}
+.bd-model-key {
+  bottom: 30%;
+}

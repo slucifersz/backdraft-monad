@@ -54,5 +54,13 @@
     "chainId": 10143,
     "deployedAt": "2026-11-21T06:21:50Z",
     "current": true
+  },
+  {
+    "name": "HookedApp",
+    "address": "0x501ee51685e01521776EF1639dB573A9b9969078",
+    "tx": "0xec406f4e73b742e9b89a146998e500c2ae06fca72e9b1a69c36794834e20b9ac",
+    "chainId": 10143,
+    "deployedAt": "2026-11-21T08:31:53Z",
+    "current": true
   }
 ]

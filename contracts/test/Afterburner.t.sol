@@ -5,6 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {Afterburner, IAfterburnerJob} from "../src/Afterburner.sol";
 import {GasModel} from "../src/GasModel.sol";
 import {DemoApp, Heartbeat} from "../src/DemoApp.sol";
+import {HookedApp, IBackdraft} from "../src/BackdraftHook.sol";
 
 contract HungryJob is IAfterburnerJob {
     uint256 public x;
@@ -155,6 +156,38 @@ contract AfterburnerTest is Test {
         assertLt(h[h.length - 1], first / 20, "loss should fall a lot");
         // true value at n=16 is about 30_000 + 16*3_500 = 86_000
         assertApproxEqRel(model.predict(16), 86_400, 0.05e18);
+    }
+
+    // ---- hook path: an application adds the `recycle` modifier ----
+
+    function test_hookRecyclesAndKeepsTheCaller() public {
+        HookedApp hooked = new HookedApp(IBackdraft(address(ab)));
+        uint256 before = user.balance;
+        vm.prank(user, user);
+        hooked.crunch{gas: 600_000}(8);
+
+        assertEq(hooked.calls(), 1);
+        assertEq(hooked.lastCaller(), user, "the app still sees the real caller");
+        assertGt(model.steps(), 0, "leftover gas trained the model");
+        assertGt(user.balance - before, 0, "bounty went to the caller");
+    }
+
+    function test_hookNeverBreaksATightCall() public {
+        HookedApp hooked = new HookedApp(IBackdraft(address(ab)));
+        uint256 before = user.balance;
+        vm.prank(user, user);
+        hooked.crunch{gas: 120_000}(8); // too little left to recycle: hook is skipped
+        assertEq(hooked.calls(), 1);
+        assertEq(user.balance, before);
+        assertEq(model.steps(), 0);
+    }
+
+    function test_hookSwallowsBackdraftErrors() public {
+        // pointing the hook at a contract that is not Backdraft must not break the app
+        HookedApp hooked = new HookedApp(IBackdraft(address(beat)));
+        vm.prank(user, user);
+        hooked.crunch{gas: 600_000}(8);
+        assertEq(hooked.calls(), 1);
     }
 
     function test_closeJobRefundsPoster() public {
