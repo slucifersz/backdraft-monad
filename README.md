@@ -2,13 +2,15 @@
 
 **没烧完的 gas，回头再烧一次。**
 
-在 Monad 上，交易里付了钱却没用完的 gas，拿来替别人执行任务，并把赏金还给你。
+别的链把没用完的 gas 退给你，Monad 把它留了下来。按 Category Labs 公布的数据推算，Monad 主网上每天约有 2000 亿 gas 的算力已经有人付了钱、占好了位置，却什么都没算。Backdraft 是这批算力的开放入口：让交易里没用完的 gas 在作废之前执行链上任务，并把赏金还给发送者。
 
-> On Monad a transaction is charged for its gas *limit*, not for the gas it uses, and nothing is refunded. Backdraft spends the leftover — gas that is already paid for and about to be thrown away — on a queue of posted jobs, and pays the job bounty back to the sender. In the demo the queued job trains a small on-chain model that predicts how much gas a call needs.
+> On Monad a transaction is charged for its gas *limit*, not for the gas it uses, and nothing is refunded. That leaves a resource no other chain has: compute that is already paid for and about to be discarded. Backdraft is an open queue that spends it on posted jobs and pays the bounty back to the sender. Any contract that implements `work()` can plug in. The first job trains a small on-chain model that predicts how much gas a call needs.
+
+测试网实测：一笔上限 50 万的交易，预留算力的利用率从 15% 提高到 90%，执行了 26 步链上训练，发送者赚回 32% 的手续费。
 
 Monad Blitz @ 广州，2026-11-21。合约、脚本和文档全部在活动当天完成，赛前只有 Foundry / Next.js 的空白脚手架。
 
-## 问题
+## 这份资源从哪来
 
 Monad 按交易声明的 gas 上限收费，不按实际消耗收费，也不退还。这是异步执行带来的设计：区块在执行之前就已经排好，协议只能按上限预留容量。
 
@@ -27,6 +29,22 @@ Backdraft 是一个链上的任务队列，加一个包装入口。
 
 应用合约不需要做任何改动。也可以选择在自己函数的末尾调用 `burn(beneficiary)` 直接接入。
 
+### 一个函数接入
+
+队列对任何人开放。任务合约只需要实现一个函数：
+
+```solidity
+contract MyJob is IAfterburnerJob {
+    function work() external returns (uint256 units) {
+        // 拿到多少 gas，就做多少事；返回完成的工作量（0 表示这次没事可做）
+    }
+}
+```
+
+然后调用 `postJob(target, minGas, maxGas, bountyPerGas, label)` 并附上押金。赏金按任务实际用掉的 gas 结算，押金用完任务自动停，连续失败 3 次会被停用。目前挂任务需要直接调合约，任务按登记的先后顺序执行。
+
+适合的是需要算力、但不赶时间的操作：链上模型的训练与批量推理、金库复利结算、批量发放、链上游戏的状态推进、过期数据清理。
+
 ### 为什么只在 Monad 上成立
 
 以太坊按实际消耗收费，没用完的 gas 会退回，不存在"已经付过钱的剩余"。只有在按上限收费的链上，剩余的 gas 才是边际成本为零的资源：执行任务的人不需要像普通的任务执行者那样另外花钱发交易。
@@ -35,7 +53,7 @@ Backdraft 是一个链上的任务队列，加一个包装入口。
 
 每单位 gas 的赏金被合约限制在该笔交易 gas 价格的 90% 以内（`MAX_REFUND_BPS`），所以拿回的永远少于多付的。把上限设紧仍然是最划算的做法，Backdraft 回收的是不得不留的那部分安全余量，以及没有被设紧的那些交易。
 
-## 演示里的任务：用浪费的 gas 训练一个预测 gas 的模型
+## 第一个接进来的任务：用没人用的 gas 训练一个预测 gas 的模型
 
 队列里有两个任务：
 
@@ -56,6 +74,7 @@ Backdraft 是一个链上的任务队列，加一个包装入口。
 | 写死 500,000 | 500,000 | 323,478 | 26 | 0.05050 | 0.01617 | 32.0% |
 | 调用失败，上限 300,000 | 300,000 | 179,069 | 14 | 0.03030 | 0.00895 | 29.5% |
 
+- 上限 50 万的那一笔：同一个调用直接发出只会用到 74,081 gas，占预留的 15%；经过 Backdraft 实际执行了 447,778 gas，占 90%。
 - 上限设得紧的交易没有可回收的，也不需要回收，这符合预期。
 - 模型从零开始，经过 191 步训练，误差从 0.40 降到 0.000003；对 `n = 8` 的预测是 73,980 gas，实测值是 74,081，相差 0.14%。
 - 截至 11 月 21 日 14:27：累计回收 20 笔交易、360 万 gas、273 个工作单位，付出赏金 0.18 MON。
@@ -86,6 +105,7 @@ Backdraft 是一个链上的任务队列，加一个包装入口。
 
 如实说明，这是一个机制演示，不是可以直接上线的产品：
 
+- **主网目前离跑满还很远。** 每天约 2000 亿空转的 gas 是估算值（按 Category Labs 的一周 815 万笔交易、每笔平均用量和 32.5% 的未用比例推算），它只占全天区块容量的不到 1%。这份资源的意义在于它已经有人付过钱，而不在于区块空间紧张。
 - **任务什么时候被执行不确定。** 取决于有没有带剩余 gas 的交易经过，只适合不赶时间的操作，例如结算、复利、批量发放。
 - **包装入口会改变调用者。** 通过 `exec` 发起时，目标合约看到的调用者是 Backdraft 的合约，依赖调用者身份的应用不能直接这样用。正式的形态应当是智能账户（ERC-4337 / EIP-7702）里的一个执行模块，让用户自己的账户在交易末尾回收，调用者不变。今天没有做。
 - **并行执行。** 所有经过队列的交易都会读写队列和任务合约的状态，彼此冲突，在 Monad 上会被串行重新执行。训练这类有先后顺序的任务无法避免这一点。

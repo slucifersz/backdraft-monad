@@ -1,12 +1,15 @@
 import {
   createPublicClient,
   createWalletClient,
+  custom,
   encodeFunctionData,
   http,
   parseAbi,
   parseEventLogs,
+  type EIP1193Provider,
   type Hex,
   type TransactionReceipt,
+  type WalletClient,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { monadTestnet } from "viem/chains";
@@ -66,6 +69,54 @@ export const walletClient = demoAccount
       transport: http(RPC_URL, { retryCount: 2, retryDelay: 400 }),
     })
   : undefined;
+
+// ------------------------------------------------- the visitor's own wallet
+
+let injected: { client: WalletClient; address: Hex } | undefined;
+
+function injectedProvider(): EIP1193Provider | undefined {
+  if (typeof window === "undefined") return undefined;
+  return (window as unknown as { ethereum?: EIP1193Provider }).ethereum;
+}
+
+/** Is there a browser wallet (window.ethereum) we could connect to? */
+export function hasInjectedWallet(): boolean {
+  return injectedProvider() !== undefined;
+}
+
+/**
+ * Connect the visitor's browser wallet and switch it to Monad Testnet. From
+ * then on sendExec() is signed by that wallet, so the leftover gas being burned
+ * and the bounty coming back are the visitor's own. Throws if they decline.
+ */
+export async function connectInjected(): Promise<Hex> {
+  const provider = injectedProvider();
+  if (!provider) throw new Error("no browser wallet found");
+  const client = createWalletClient({ chain: monadTestnet, transport: custom(provider) });
+  const [address] = await client.requestAddresses();
+  try {
+    await client.switchChain({ id: monadTestnet.id });
+  } catch {
+    await client.addChain({ chain: monadTestnet });
+    await client.switchChain({ id: monadTestnet.id });
+  }
+  injected = { client, address };
+  return address;
+}
+
+/** Go back to the built-in demo account. */
+export function switchToDemoAccount(): void {
+  injected = undefined;
+}
+
+export function usingOwnWallet(): boolean {
+  return injected !== undefined;
+}
+
+/** The address transactions are currently sent from. */
+export function activeAddress(): Hex | undefined {
+  return injected?.address ?? demoAccount?.address;
+}
 
 // ---------------------------------------------------------------- reads
 
@@ -233,14 +284,20 @@ export type SentTx = Outcome & {
 };
 
 export async function sendExec(call: CallKind, gasLimit: number, fees: Fees): Promise<SentTx> {
-  if (!walletClient || !demoAccount) throw new Error("no demo account configured");
-  const hash = await walletClient.sendTransaction({
+  const request = {
     to: ADDR.afterburner,
     data: execCalldata(call),
     gas: BigInt(gasLimit),
     maxFeePerGas: fees.maxFeePerGas,
     maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
-  });
+  } as const;
+  let hash: Hex;
+  if (injected) {
+    hash = await injected.client.sendTransaction({ ...request, account: injected.address, chain: monadTestnet });
+  } else {
+    if (!walletClient || !demoAccount) throw new Error("no demo account configured");
+    hash = await walletClient.sendTransaction(request);
+  }
   const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: 60_000 });
   return decodeReceipt(receipt, gasLimit);
 }
@@ -269,6 +326,24 @@ export function decodeReceipt(receipt: TransactionReceipt, gasLimit: number): Se
         ? { id: Number(r.args.id), gasUsed: Number(r.args.gasUsed), units: Number(r.args.units), bounty: r.args.bounty }
         : { id: 0, gasUsed: 0, units: 0, bounty: 0n },
     ),
+  };
+}
+
+/**
+ * How much of the gas a transaction reserved actually got executed.
+ * `before` is what the same call would have used if sent directly (pass the
+ * result of estimateDirect; for a call that reverts we fall back to the
+ * measured call gas plus the 21,000 base cost). `after` is what was executed
+ * once the leftover had been burned on jobs.
+ */
+export function utilization(
+  tx: Pick<SentTx, "gasLimit" | "gasLeft" | "mainGas">,
+  directEstimate: number | null,
+): { before: number; after: number } {
+  const direct = directEstimate ?? tx.mainGas + 21_000;
+  return {
+    before: Math.min(1, direct / tx.gasLimit),
+    after: Math.min(1, (tx.gasLimit - tx.gasLeft) / tx.gasLimit),
   };
 }
 
